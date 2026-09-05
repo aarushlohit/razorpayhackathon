@@ -119,8 +119,8 @@ export const LiveQueueTable: React.FC<LiveQueueTableProps> = ({
     }
   };
 
-  const renderConfidenceBadge = (confidence?: number) => {
-    if (confidence === undefined) return <span className="text-slate-600 font-mono text-xs">-</span>;
+  const renderConfidenceBadge = (confidence?: number | null) => {
+    if (confidence === undefined || confidence === null) return <span className="text-slate-600 font-mono text-xs">-</span>;
     const pct = Math.round(confidence * 100);
     const colorClass =
       pct >= 85
@@ -244,12 +244,12 @@ export const LiveQueueTable: React.FC<LiveQueueTableProps> = ({
 
                   {/* Diagnosis */}
                   <td className="py-2.5 px-3">
-                    {c.latest_diagnosis ? (
+                    {c.latest_diagnosis && c.latest_diagnosis.likely_stage ? (
                       <div className="text-slate-200 font-medium capitalize">
                         {c.latest_diagnosis.likely_stage.replace(/_/g, " ")}
                       </div>
                     ) : (
-                      <span className="text-slate-500 italic text-[11px]">Unanalyzed</span>
+                      <span className="text-slate-500 italic text-[11px]">{c.latest_diagnosis?.provider === "AI_UNAVAILABLE" ? "AI Unavailable" : "Unanalyzed"}</span>
                     )}
                   </td>
 

@@ -447,15 +447,15 @@ export async function runAIDiagnosis(
   // ─── ALL PROVIDERS FAILED — Honest unavailable state ──────────────────────
   console.error(`[AI] All providers failed after ${Date.now() - startedAt}ms. Keys present: Gemini=${!!geminiKey}, NVIDIA=${!!nvidiaKey}, OpenCode=${!!openCodeKey}`);
   return {
-    likely_stage: "ambiguous",
-    confidence: 0.0,
-    recommended_action: "escalate_to_human",
-    reasoning:
-      "AI provider unavailable or all providers returned invalid responses. Real AI API key required for autonomous diagnosis. Human review required.",
+    likely_stage: null,
+    confidence: null,
+    recommended_action: null,
+    reasoning: null,
     evidence_used: [],
+    assessment: null,
     provider: "AI_UNAVAILABLE",
-    model: "none",
-    error: "No active AI provider returned a valid schema-compliant diagnosis.",
+    model: null,
+    error: "No active AI provider returned a valid schema-compliant diagnosis. Autonomous loop safely halted with zero action.",
     latency_ms: Date.now() - startedAt,
   };
 }

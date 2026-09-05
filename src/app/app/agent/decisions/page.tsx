@@ -110,7 +110,7 @@ export default function AIDecisionsPage() {
                         {assessment?.summary || diag.reasoning}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-[#6E6E73] font-mono pt-0.5">
-                        <span>{(diag.confidence * 100).toFixed(0)}% confidence</span>
+                        <span>{diag.confidence !== null && typeof diag.confidence === "number" ? `${(diag.confidence * 100).toFixed(0)}% confidence` : "NO AI DIAGNOSIS"}</span>
                         <span>·</span>
                         <span className="capitalize">{diag.provider}</span>
                         {diag.latency_ms && (

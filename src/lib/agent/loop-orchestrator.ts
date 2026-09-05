@@ -93,10 +93,13 @@ export async function runAgentLoopForCase(
       diagnosis
     );
   } else {
+    const stageStr = diagnosis.likely_stage ? diagnosis.likely_stage.toUpperCase() : "UNKNOWN";
+    const confStr = diagnosis.confidence !== null && typeof diagnosis.confidence === "number" ? `${(diagnosis.confidence * 100).toFixed(0)}%` : "N/A";
+    const isSuccess = typeof diagnosis.confidence === "number" && diagnosis.confidence >= workspace.confidence_threshold;
     logStep(
       "DIAGNOSE",
-      `AI Diagnosis [${diagnosis.provider} / ${diagnosis.model || "default"}]: Stage='${diagnosis.likely_stage.toUpperCase()}' | Confidence=${(diagnosis.confidence * 100).toFixed(0)}% | Recommended='${diagnosis.recommended_action}'. ${diagnosis.reasoning}`,
-      diagnosis.confidence >= workspace.confidence_threshold ? "SUCCESS" : "WARNING",
+      `AI Diagnosis [${diagnosis.provider} / ${diagnosis.model || "default"}]: Stage='${stageStr}' | Confidence=${confStr} | Recommended='${diagnosis.recommended_action || "none"}'. ${diagnosis.reasoning || ""}`,
+      isSuccess ? "SUCCESS" : "WARNING",
       diagnosis
     );
   }

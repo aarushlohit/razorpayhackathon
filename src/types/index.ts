@@ -110,16 +110,16 @@ export interface AIAssessment {
 }
 
 export interface DiagnosisResult {
-  likely_stage: "webhook_missing" | "bank_leg_stuck" | "invalid_destination" | "ledger_mismatch" | "ambiguous";
-  confidence: number;
-  recommended_action: AllowedAction;
-  reasoning: string;
+  likely_stage: "webhook_missing" | "bank_leg_stuck" | "invalid_destination" | "ledger_mismatch" | "ambiguous" | null;
+  confidence: number | null;
+  recommended_action: AllowedAction | null;
+  reasoning: string | null;
   evidence_used?: string[];
-  assessment?: AIAssessment;
+  assessment?: AIAssessment | null;
   provider: "gemini" | "nvidia" | "opencode" | "AI_UNAVAILABLE" | string;
-  model?: string;
-  raw_response?: string;
-  error?: string;
+  model?: string | null;
+  raw_response?: string | null;
+  error?: string | null;
   latency_ms?: number;
 }
 

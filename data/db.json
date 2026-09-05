@@ -683,7 +683,7 @@
       "customer_id": "cust_82826",
       "customer_name": "Diya Patel",
       "customer_vpa_or_account": "diya.patel66@okhdfcbank",
-      "current_status": "INVESTIGATING",
+      "current_status": "ESCALATED_LOW_CONFIDENCE",
       "failure_class": "WEBHOOK_MISSING",
       "is_planted_failure": false,
       "remediation_attempts": 1,
@@ -743,6 +743,14 @@
             "event_type": "escalated_to_human_ops",
             "status": "PENDING",
             "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          },
+          {
+            "id": "evt_act_esc_1788633167181",
+            "timestamp": "2026-09-05T18:32:47.181Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           }
         ],
         "age_days": 3,
@@ -752,79 +760,119 @@
       },
       "id": "case_CS_345_0004",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T18:31:57.375Z",
+      "updated_at": "2026-09-05T18:32:47.181Z",
       "latest_diagnosis": {
-        "likely_stage": "webhook_missing",
-        "confidence": 0.95,
-        "recommended_action": "refresh_status",
-        "reasoning": "The refund was successfully credited to the customer by the bank on 2026-09-02, but the merchant's system was not notified until 2026-09-05 due to an initial webhook timeout.",
-        "evidence_used": [
-          "settlement: bank_credit_confirmed (The acquiring bank successfully processed the reversal to the customer account on 2026-09-02.)",
-          "webhook_dispatcher: webhook_delivery_attempt | FAILED (The initial notification to the merchant failed due to a 10000ms timeout, creating the state of limbo.)",
-          "webhook_dispatcher: merchant_webhook_sync | SUCCESS (The merchant was successfully notified of the refund status on 2026-09-05 after a 3-day delay.)",
-          "merchant_ledger: REFUNDED (The merchant's accounting records currently reflect the successful refund state.)"
-        ],
-        "assessment": {
-          "primary_hypothesis": {
-            "code": "WEBHOOK_DELIVERY_FAILURE",
-            "label": "Delayed Merchant Notification due to Webhook Timeout",
-            "confidence": 0.95
-          },
-          "summary": "The refund was successfully credited to the customer by the bank on 2026-09-02, but the merchant's system was not notified until 2026-09-05 due to an initial webhook timeout.",
-          "evidence": [
-            {
-              "source": "settlement",
-              "observed": "bank_credit_confirmed",
-              "interpretation": "The acquiring bank successfully processed the reversal to the customer account on 2026-09-02.",
-              "supports": true
-            },
-            {
-              "source": "webhook_dispatcher",
-              "observed": "webhook_delivery_attempt | FAILED",
-              "interpretation": "The initial notification to the merchant failed due to a 10000ms timeout, creating the state of limbo.",
-              "supports": true
-            },
-            {
-              "source": "webhook_dispatcher",
-              "observed": "merchant_webhook_sync | SUCCESS",
-              "interpretation": "The merchant was successfully notified of the refund status on 2026-09-05 after a 3-day delay.",
-              "supports": true
-            },
-            {
-              "source": "merchant_ledger",
-              "observed": "REFUNDED",
-              "interpretation": "The merchant's accounting records currently reflect the successful refund state.",
-              "supports": true
-            }
-          ],
-          "alternative_hypotheses": [
-            {
-              "label": "Ledger Desynchronization",
-              "confidence": 0.05
-            }
-          ],
-          "recommended_action": {
-            "action": "refresh_status",
-            "reason": "The webhook has been successfully delivered as of 2026-09-05; refreshing the status will confirm the merchant's internal system has reconciled and the case can be closed."
-          },
-          "uncertainty": "Whether the merchant's internal system processed the successful webhook delivery on 2026-09-05 immediately or if there is a secondary internal processing delay."
-        },
-        "provider": "gemini",
-        "model": "gemini-3-flash-preview",
-        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Delayed Merchant Notification due to Webhook Timeout\",\n      \"confidence\": 0.95\n    },\n    \"summary\": \"The refund was successfully credited to the customer by the bank on 2026-09-02, but the merchant's system was not notified until 2026-09-05 due to an initial webhook timeout.\",\n    \"evidence\": [\n      {\n        \"source\": \"settlement\",\n        \"observed\": \"bank_credit_confirmed\",\n        \"interpretation\": \"The acquiring bank successfully processed the reversal to the customer account on 2026-09-02.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"webhook_delivery_attempt | FAILED\",\n        \"interpretation\": \"The initial notification to the merchant failed due to a 10000ms timeout, creating the state of limbo.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"merchant_webhook_sync | SUCCESS\",\n        \"interpretation\": \"The merchant was successfully notified of the refund status on 2026-09-05 after a 3-day delay.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"REFUNDED\",\n        \"interpretation\": \"The merchant's accounting records currently reflect the successful refund state.\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Ledger Desynchronization\",\n        \"confidence\": 0.05\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"refresh_status\",\n      \"reason\": \"The webhook has been successfully delivered as of 2026-09-05; refreshing the status will confirm the merchant's internal system has reconciled and the case can be closed.\"\n    },\n    \"uncertainty\": \"Whether the merchant's internal system processed the successful webhook delivery on 2026-09-05 immediately or if there is a secondary internal processing delay.\"\n  },\n  \"confidence\": 0.95\n}",
-        "latency_ms": 10789
+        "likely_stage": "ambiguous",
+        "confidence": 0,
+        "recommended_action": "escalate_to_human",
+        "reasoning": "AI provider unavailable or all providers returned invalid responses. Real AI API key required for autonomous diagnosis. Human review required.",
+        "evidence_used": [],
+        "provider": "AI_UNAVAILABLE",
+        "model": "none",
+        "error": "No active AI provider returned a valid schema-compliant diagnosis.",
+        "latency_ms": 49702
       },
       "latest_policy": {
+        "evaluation_id": "eval_a653bdc2-a769-4274-8974-32268350ca8f",
+        "decision": "HALT",
         "allowed": false,
         "action_to_take": "escalate_to_human",
-        "rule_triggered": "RULE_3_MAX_REMEDIATION_LIMIT",
-        "reason": "Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached.",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:32:47.145Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "0.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹4,697",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹4,697 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'escalate_to_human' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "ambiguous -> escalate_to_human",
+            "threshold": "escalate_to_human",
+            "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'escalate_to_human' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": false,
+            "observed": "escalate_to_human",
+            "threshold": "Action != escalate_to_human",
+            "reason": "AI diagnosis or operations policy explicitly recommended human escalation."
+          }
+        ],
         "checks": {
-          "confidence_passed": true,
+          "confidence_passed": false,
           "amount_passed": true,
           "remediation_limit_passed": false,
           "allowed_action_passed": true,
-          "evidence_complete_passed": true
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
         }
       },
       "latest_action": {
@@ -32560,6 +32608,14 @@
             "event_type": "escalated_to_human_ops",
             "status": "PENDING",
             "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          },
+          {
+            "id": "evt_act_esc_1788633167181",
+            "timestamp": "2026-09-05T18:32:47.181Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           }
         ],
         "age_days": 3,
@@ -32571,6 +32627,162 @@
       "timestamp": "2026-09-05T18:31:57.392Z",
       "previous_hash": "53083416022e6815a5da00464bd8a22acdf56d3a3265dba7b88fd6bcf4368cd1",
       "event_hash": "d0bed53569d133dd4c79983854c0a1bd238511227945350106d39eff249d0bb4"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0004",
+      "actor": "AGENT_CORE",
+      "stage": "DIAGNOSE",
+      "action": "DIAGNOSE",
+      "provider": "sandbox",
+      "message": "AI Unavailable: Real AI provider not configured or unreachable. Halting autonomous loop safely.",
+      "status": "WARNING",
+      "details": {
+        "likely_stage": "ambiguous",
+        "confidence": 0,
+        "recommended_action": "escalate_to_human",
+        "reasoning": "AI provider unavailable or all providers returned invalid responses. Real AI API key required for autonomous diagnosis. Human review required.",
+        "evidence_used": [],
+        "provider": "AI_UNAVAILABLE",
+        "model": "none",
+        "error": "No active AI provider returned a valid schema-compliant diagnosis.",
+        "latency_ms": 49702
+      },
+      "id": "audit_1788633167127_2666d0",
+      "timestamp": "2026-09-05T18:32:47.127Z",
+      "previous_hash": "d0bed53569d133dd4c79983854c0a1bd238511227945350106d39eff249d0bb4",
+      "event_hash": "2117a28efdb1a382252a068e1343c06c95276fc54be752dfdf196d710215a0f0"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0004",
+      "actor": "AGENT_CORE",
+      "stage": "POLICY_GATE",
+      "action": "POLICY_GATE",
+      "provider": "sandbox",
+      "message": "POLICY GATE TRIGGERED [RULE_01_CONFIDENCE]: Autonomous execution blocked. AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "status": "WARNING",
+      "details": {
+        "evaluation_id": "eval_a653bdc2-a769-4274-8974-32268350ca8f",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:32:47.145Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "0.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹4,697",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹4,697 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'escalate_to_human' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "ambiguous -> escalate_to_human",
+            "threshold": "escalate_to_human",
+            "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'escalate_to_human' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": false,
+            "observed": "escalate_to_human",
+            "threshold": "Action != escalate_to_human",
+            "reason": "AI diagnosis or operations policy explicitly recommended human escalation."
+          }
+        ],
+        "checks": {
+          "confidence_passed": false,
+          "amount_passed": true,
+          "remediation_limit_passed": false,
+          "allowed_action_passed": true,
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
+        }
+      },
+      "id": "audit_1788633167196_18ecba",
+      "timestamp": "2026-09-05T18:32:47.196Z",
+      "previous_hash": "2117a28efdb1a382252a068e1343c06c95276fc54be752dfdf196d710215a0f0",
+      "event_hash": "6e49485996370d308f7833f27cfa2317e6ccd0e66e7048ff94e7d6c89f3a130b"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0004",
+      "actor": "AGENT_CORE",
+      "stage": "OUTCOME",
+      "action": "OUTCOME",
+      "provider": "sandbox",
+      "message": "Closed loop with Human Escalation [Status: ESCALATED_LOW_CONFIDENCE]. Zero financial exposure incurred.",
+      "status": "INFO",
+      "id": "audit_1788633167217_382258",
+      "timestamp": "2026-09-05T18:32:47.217Z",
+      "previous_hash": "6e49485996370d308f7833f27cfa2317e6ccd0e66e7048ff94e7d6c89f3a130b",
+      "event_hash": "8c33869c650a59278c3d1216a4e7d8c92ceaeec1bf63f374bba92f3dbcda43a4"
     }
   ],
   "sandbox_configs": {
@@ -37271,6 +37483,100 @@
         }
       ],
       "evaluated_at": "2026-09-05T18:31:51.806Z"
+    },
+    "eval_a653bdc2-a769-4274-8974-32268350ca8f": {
+      "evaluation_id": "eval_a653bdc2-a769-4274-8974-32268350ca8f",
+      "case_id": "CS_345_0004",
+      "workspace_id": "ws_razorpay_demo",
+      "confidence": 0,
+      "amount": 4697,
+      "requested_action": "escalate_to_human",
+      "decision": "HALT",
+      "rule_triggered": "RULE_01_CONFIDENCE",
+      "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "rules": [
+        {
+          "id": "RULE_01_CONFIDENCE",
+          "name": "AI Confidence Threshold",
+          "passed": false,
+          "observed": "0.0%",
+          "threshold": "≥ 85%",
+          "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+        },
+        {
+          "id": "RULE_02_HIGH_VALUE",
+          "name": "High Value Liability Ceiling",
+          "passed": true,
+          "observed": "₹4,697",
+          "threshold": "≤ ₹50,000",
+          "reason": "Refund liability ₹4,697 is within autonomous ceiling (≤ ₹50,000)."
+        },
+        {
+          "id": "RULE_03_ACTION_ALLOWLIST",
+          "name": "Server Action Allowlist",
+          "passed": true,
+          "observed": "escalate_to_human",
+          "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+          "reason": "Action 'escalate_to_human' is registered in server-side allowlist."
+        },
+        {
+          "id": "RULE_04_ACTION_COMPATIBILITY",
+          "name": "Diagnosis / Action Compatibility",
+          "passed": true,
+          "observed": "ambiguous -> escalate_to_human",
+          "threshold": "escalate_to_human",
+          "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
+        },
+        {
+          "id": "RULE_05_CASE_STATE",
+          "name": "Case State Eligibility",
+          "passed": true,
+          "observed": "INVESTIGATING",
+          "threshold": "LIMBO, INVESTIGATING",
+          "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+        },
+        {
+          "id": "RULE_06_IDEMPOTENCY",
+          "name": "Idempotency & Remediation Limit",
+          "passed": false,
+          "observed": "1 attempts",
+          "threshold": "< 1 attempt(s)",
+          "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+        },
+        {
+          "id": "RULE_07_WORKSPACE_ISOLATION",
+          "name": "Workspace Multi-Tenant Isolation",
+          "passed": true,
+          "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+          "threshold": "Strict Match: ws_razorpay_demo",
+          "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+        },
+        {
+          "id": "RULE_08_PROVIDER_STATE",
+          "name": "Provider Telemetry Freshness",
+          "passed": true,
+          "observed": "FRESH",
+          "threshold": "Complete & Non-Stale Telemetry",
+          "reason": "Provider telemetry is complete and matches live evidence state."
+        },
+        {
+          "id": "RULE_09_APPROVED_TOOL",
+          "name": "Approved Execution Tooling",
+          "passed": true,
+          "observed": "escalate_to_human",
+          "threshold": "Server-controlled handler implementation",
+          "reason": "Tool 'escalate_to_human' maps to a verified server-controlled adapter method."
+        },
+        {
+          "id": "RULE_10_ESCALATION_CHECK",
+          "name": "Autonomous Action vs Escalation",
+          "passed": false,
+          "observed": "escalate_to_human",
+          "threshold": "Action != escalate_to_human",
+          "reason": "AI diagnosis or operations policy explicitly recommended human escalation."
+        }
+      ],
+      "evaluated_at": "2026-09-05T18:32:47.145Z"
     }
   }
 }

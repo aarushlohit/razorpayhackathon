@@ -189,12 +189,14 @@ export const CaseInspector: React.FC<CaseInspectorProps> = ({
                   <span className="text-slate-400">Confidence: </span>
                   <span
                     className={`font-mono font-bold px-1.5 py-0.5 rounded border ${
-                      latest_diagnosis.confidence >= 0.85
+                      latest_diagnosis.confidence !== null && latest_diagnosis.confidence >= 0.85
                         ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                         : "text-amber-400 bg-amber-500/10 border-amber-500/20"
                     }`}
                   >
-                    {(latest_diagnosis.confidence * 100).toFixed(0)}%
+                    {latest_diagnosis.confidence !== null && typeof latest_diagnosis.confidence === "number"
+                      ? `${(latest_diagnosis.confidence * 100).toFixed(0)}%`
+                      : "N/A"}
                   </span>
                 </div>
               </div>

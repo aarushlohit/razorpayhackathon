@@ -198,7 +198,8 @@ export async function diagnoseRefundCase(
   return evaluateDeterministicDiagnosis(refundCase, evidence);
 }
 
-function validateAction(action: string): AllowedAction {
+function validateAction(action?: string | null): AllowedAction {
+  if (!action) return "escalate_to_human";
   const allowed: AllowedAction[] = [
     "resend_webhook",
     "reconcile_state",

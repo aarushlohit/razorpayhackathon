@@ -151,7 +151,7 @@ export default function RecoveryQueuePage() {
                   <div className="flex flex-wrap items-center gap-2 text-xs text-[#6E6E73] font-mono pt-0.5">
                     {diag && (
                       <>
-                        <span>AI confidence {(diag.confidence * 100).toFixed(0)}%</span>
+                        <span>{diag.confidence !== null && typeof diag.confidence === "number" ? `AI confidence ${(diag.confidence * 100).toFixed(0)}%` : "No AI diagnosis"}</span>
                         <span>·</span>
                       </>
                     )}

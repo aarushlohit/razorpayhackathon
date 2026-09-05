@@ -77,16 +77,19 @@ export function evaluateSecurityPolicy({
   const rules: PolicyRuleEvaluation[] = [];
 
   // ─── RULE 01 — AI CONFIDENCE ──────────────────────────────────────────────
-  const rule01Passed = diagnosis.confidence >= confidenceCutoff;
+  const isConfidenceValid = typeof diagnosis.confidence === "number" && diagnosis.confidence !== null;
+  const rule01Passed = isConfidenceValid && diagnosis.confidence! >= confidenceCutoff;
   rules.push({
     id: "RULE_01_CONFIDENCE",
     name: "AI Confidence Threshold",
     passed: rule01Passed,
-    observed: `${(diagnosis.confidence * 100).toFixed(1)}%`,
+    observed: isConfidenceValid ? `${(diagnosis.confidence! * 100).toFixed(1)}%` : "UNAVAILABLE (No AI diagnosis)",
     threshold: `≥ ${(confidenceCutoff * 100).toFixed(0)}%`,
-    reason: rule01Passed
-      ? `AI confidence (${(diagnosis.confidence * 100).toFixed(1)}%) meets calibrated cutoff (≥ ${(confidenceCutoff * 100).toFixed(0)}%).`
-      : `AI confidence (${(diagnosis.confidence * 100).toFixed(1)}%) is below required safety threshold (${(confidenceCutoff * 100).toFixed(0)}%). Probabilistic uncertainty requires human review.`,
+    reason: isConfidenceValid
+      ? (rule01Passed
+          ? `AI confidence (${(diagnosis.confidence! * 100).toFixed(1)}%) meets calibrated cutoff (≥ ${(confidenceCutoff * 100).toFixed(0)}%).`
+          : `AI confidence (${(diagnosis.confidence! * 100).toFixed(1)}%) is below required safety threshold (${(confidenceCutoff * 100).toFixed(0)}%). Probabilistic uncertainty requires human review.`)
+      : "No valid AI diagnosis produced. Autonomous execution strictly prohibited.",
   });
 
   // ─── RULE 02 — HIGH VALUE CEILING ─────────────────────────────────────────
@@ -116,14 +119,14 @@ export function evaluateSecurityPolicy({
   });
 
   // ─── RULE 04 — DIAGNOSIS/ACTION COMPATIBILITY ────────────────────────────
-  const stageKey = diagnosis.assessment?.primary_hypothesis?.code || diagnosis.likely_stage;
-  const compatibleActions = DIAGNOSIS_ACTION_COMPATIBILITY[stageKey] || DIAGNOSIS_ACTION_COMPATIBILITY[diagnosis.likely_stage] || ["escalate_to_human"];
-  const rule04Passed = compatibleActions.includes(action);
+  const stageKey = diagnosis.assessment?.primary_hypothesis?.code || diagnosis.likely_stage || "ambiguous";
+  const compatibleActions = (stageKey && DIAGNOSIS_ACTION_COMPATIBILITY[stageKey]) || (diagnosis.likely_stage && DIAGNOSIS_ACTION_COMPATIBILITY[diagnosis.likely_stage]) || ["escalate_to_human"];
+  const rule04Passed = compatibleActions.includes(action as AllowedAction);
   rules.push({
     id: "RULE_04_ACTION_COMPATIBILITY",
     name: "Diagnosis / Action Compatibility",
     passed: rule04Passed,
-    observed: `${stageKey} -> ${action}`,
+    observed: `${stageKey} -> ${action || "none"}`,
     threshold: compatibleActions.join(", "),
     reason: rule04Passed
       ? `Remediation action '${action}' is logically compatible with verified failure stage '${stageKey}'.`
@@ -194,15 +197,15 @@ export function evaluateSecurityPolicy({
   });
 
   // ─── RULE 09 — APPROVED TOOL INTEGRITY ────────────────────────────────────
-  const rule09Passed = action !== "escalate_to_human" ? AUTHORIZED_TOOLS.includes(action) : true;
+  const rule09Passed = action && action !== "escalate_to_human" ? AUTHORIZED_TOOLS.includes(action as AllowedAction) : true;
   rules.push({
     id: "RULE_09_APPROVED_TOOL",
     name: "Approved Execution Tooling",
-    passed: rule09Passed,
-    observed: action,
+    passed: Boolean(rule09Passed),
+    observed: action || "none",
     threshold: "Server-controlled handler implementation",
     reason: rule09Passed
-      ? `Tool '${action}' maps to a verified server-controlled adapter method.`
+      ? `Tool '${action || "none"}' maps to a verified server-controlled adapter method.`
       : `Tool '${action}' has no approved handler. Dynamic execution rejected.`,
   });
 
@@ -213,7 +216,7 @@ export function evaluateSecurityPolicy({
     id: "RULE_10_ESCALATION_CHECK",
     name: "Autonomous Action vs Escalation",
     passed: rule10Passed,
-    observed: action,
+    observed: action || "none",
     threshold: "Action != escalate_to_human",
     reason: isExplicitEscalation
       ? `AI diagnosis or operations policy explicitly recommended human escalation.`
@@ -345,7 +348,7 @@ function persistEvaluation(
   decision: PolicyDecision,
   caseData: RefundCase,
   workspaceId: string,
-  requestedAction: AllowedAction
+  requestedAction?: AllowedAction | null
 ): void {
   const record: PolicyEvaluationRecord = {
     evaluation_id: decision.evaluation_id,
@@ -353,7 +356,7 @@ function persistEvaluation(
     workspace_id: workspaceId,
     confidence: caseData.latest_diagnosis?.confidence ?? 0,
     amount: caseData.amount,
-    requested_action: requestedAction,
+    requested_action: requestedAction || "escalate_to_human",
     decision: decision.decision,
     rule_triggered: decision.rule_triggered,
     reason: decision.reason,

@@ -234,17 +234,25 @@ export default function CaseInvestigationPage() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <h2 className="text-xl font-bold tracking-tight text-[#000000]">
-                  Here&apos;s what I found.
+                  {latest_diagnosis.provider === "AI_UNAVAILABLE" ? "AI Investigation Unavailable" : "Here&apos;s what I found."}
                 </h2>
                 <p className="text-[15px] text-[#1D1D1F] leading-relaxed max-w-2xl">
-                  {assessment?.summary || latest_diagnosis.reasoning}
+                  {latest_diagnosis.provider === "AI_UNAVAILABLE"
+                    ? "All configured AI providers (Gemini, NVIDIA NIM, OpenCode) were unreachable or returned invalid output. Autonomous loop safely halted with zero action."
+                    : assessment?.summary || latest_diagnosis.reasoning}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-[#6E6E73] font-mono">
-                <span className="font-semibold text-[#000000]">
-                  {(latest_diagnosis.confidence * 100).toFixed(0)}% confidence
-                </span>
+                {latest_diagnosis.confidence !== null && typeof latest_diagnosis.confidence === "number" ? (
+                  <span className="font-semibold text-[#000000]">
+                    {(latest_diagnosis.confidence * 100).toFixed(0)}% confidence
+                  </span>
+                ) : (
+                  <span className="font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    NO AI DIAGNOSIS (0% CONFIDENCE)
+                  </span>
+                )}
                 <span>·</span>
                 <span className="capitalize">{latest_diagnosis.provider}</span>
                 {latest_diagnosis.model && (
@@ -360,7 +368,7 @@ export default function CaseInvestigationPage() {
                     {assessment?.primary_hypothesis?.label || latest_diagnosis.likely_stage}
                   </div>
                   <p className="text-[#6E6E73] text-[11px]">
-                    Probability estimate: {(latest_diagnosis.confidence * 100).toFixed(0)}%
+                    Probability estimate: {latest_diagnosis.confidence !== null && typeof latest_diagnosis.confidence === "number" ? `${(latest_diagnosis.confidence * 100).toFixed(0)}%` : "N/A"}
                   </p>
                 </div>
               </div>

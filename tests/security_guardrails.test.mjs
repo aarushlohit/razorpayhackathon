@@ -40,8 +40,9 @@ function evaluateSecurityPolicy({ caseData, diagnosis, requestedAction, workspac
   const rules = [];
 
   // RULE 01
-  const rule01Passed = diagnosis.confidence >= confidenceCutoff;
-  rules.push({ id: "RULE_01_CONFIDENCE", passed: rule01Passed, observed: `${diagnosis.confidence}`, threshold: `${confidenceCutoff}` });
+  const isConfidenceValid = typeof diagnosis.confidence === "number" && diagnosis.confidence !== null;
+  const rule01Passed = isConfidenceValid && diagnosis.confidence >= confidenceCutoff;
+  rules.push({ id: "RULE_01_CONFIDENCE", passed: rule01Passed, observed: isConfidenceValid ? `${diagnosis.confidence}` : "UNAVAILABLE (No AI diagnosis)", threshold: `${confidenceCutoff}` });
 
   // RULE 02
   const rule02Passed = caseData.amount <= highValueCutoff;
@@ -289,4 +290,38 @@ test("11. Concurrent Race Condition Protection: Two simultaneous requests consum
   await Promise.all([runCall(), runCall()]);
   assert.equal(successes, 1, "Exactly 1 execution should succeed");
   assert.equal(failures, 1, "The competing concurrent request must be rejected");
+});
+
+test("12. AI_UNAVAILABLE Semantics: Null confidence triggers immediate HALT with zero action", () => {
+  const caseData = { case_id: "CS_AI_UNAVAILABLE", amount: 5000, current_status: "LIMBO", remediation_attempts: 0, workspace_id: "ws_01", evidence: { gateway_status: "ACK", bank_status: "CONFIRMED", webhook_status: "FAILED" } };
+  const diagnosis = { confidence: null, likely_stage: null, recommended_action: null, provider: "AI_UNAVAILABLE" };
+  const workspace = { id: "ws_01", confidence_threshold: 0.85, high_value_limit: 50000, max_attempts: 1 };
+
+  const policy = evaluateSecurityPolicy({ caseData, diagnosis, workspace });
+  assert.equal(policy.decision, "HALT");
+  assert.equal(policy.allowed, false);
+  assert.equal(policy.rule_triggered, "RULE_01_CONFIDENCE");
+  assert.equal(policy.rules[0].passed, false);
+  assert.equal(policy.rules[0].observed, "UNAVAILABLE (No AI diagnosis)");
+});
+
+test("13. Razorpay Webhook Cryptographic HMAC Signature Verification", () => {
+  const secret = "whsec_test_secret_12345";
+  const payload = JSON.stringify({ event: "refund.processed", payload: { refund: { entity: { id: "rfnd_99" } } } });
+  const validSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  const tamperedSignature = crypto.createHmac("sha256", "wrong_secret").update(payload).digest("hex");
+
+  // Valid signature check
+  const isValid = crypto.timingSafeEqual(
+    Buffer.from(crypto.createHmac("sha256", secret).update(payload).digest("hex"), "utf8"),
+    Buffer.from(validSignature, "utf8")
+  );
+  assert.equal(isValid, true);
+
+  // Tampered signature check
+  const isTamperedValid = crypto.timingSafeEqual(
+    Buffer.from(crypto.createHmac("sha256", secret).update(payload).digest("hex"), "utf8"),
+    Buffer.from(tamperedSignature, "utf8")
+  );
+  assert.equal(isTamperedValid, false);
 });
