@@ -19,7 +19,7 @@ export async function GET() {
   };
 
   const integrations = {
-    razorpay: keys.RAZORPAY_KEY_ID && keys.RAZORPAY_KEY_SECRET ? "CONFIGURED" : "MISSING",
+    razorpay: keys.RAZORPAY_KEY_ID && keys.RAZORPAY_KEY_SECRET ? "ENV_CONFIGURED" : "USER_CONFIGURED_IN_SETTINGS",
     supabase: keys.NEXT_PUBLIC_SUPABASE_URL ? "CONFIGURED" : "NOT_CONNECTED (using local DB)",
   };
 

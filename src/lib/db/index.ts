@@ -11,6 +11,7 @@ import {
   SandboxConfig,
   ExecutionAuthorization,
   PolicyEvaluationRecord,
+  WorkspaceIntegration,
 } from "@/types";
 import { generateRefundDataset } from "../simulator/generator";
 
@@ -23,7 +24,9 @@ interface DatabaseSchema {
   sandbox_configs: Record<string, SandboxConfig>;
   authorizations: Record<string, ExecutionAuthorization>;
   policy_evaluations: Record<string, PolicyEvaluationRecord>;
+  integrations?: Record<string, WorkspaceIntegration>;
 }
+
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -60,6 +63,7 @@ function initDb(): DatabaseSchema {
       if (parsed.workspaces && parsed.users) {
         if (!parsed.authorizations) parsed.authorizations = {};
         if (!parsed.policy_evaluations) parsed.policy_evaluations = {};
+        if (!parsed.integrations) parsed.integrations = {};
         globalThis.__APP_DATABASE__ = parsed;
         return parsed;
       }
@@ -147,6 +151,7 @@ function initDb(): DatabaseSchema {
     },
     authorizations: {},
     policy_evaluations: {},
+    integrations: {},
   };
 
   globalThis.__APP_DATABASE__ = db;
@@ -500,5 +505,44 @@ export const Database = {
 
     return { success: true, authorization: auth };
   },
+
+  // ─── Workspace Integrations (Secure Server-Only Credentials) ───────────
+  getIntegration(workspaceId: string, provider = "razorpay"): WorkspaceIntegration | undefined {
+    const db = initDb();
+    if (!db.integrations) return undefined;
+    const compositeKey = `${workspaceId}:${provider}`;
+    return db.integrations[compositeKey];
+  },
+
+  getAllIntegrations(workspaceId: string): WorkspaceIntegration[] {
+    const db = initDb();
+    if (!db.integrations) return [];
+    return Object.values(db.integrations).filter((i) => i.workspace_id === workspaceId);
+  },
+
+  saveIntegration(integration: WorkspaceIntegration): WorkspaceIntegration {
+    const db = initDb();
+    if (!db.integrations) db.integrations = {};
+    const compositeKey = `${integration.workspace_id}:${integration.provider}`;
+    db.integrations[compositeKey] = {
+      ...integration,
+      updated_at: new Date().toISOString(),
+    };
+    saveToDisk(db);
+    return db.integrations[compositeKey];
+  },
+
+  deleteIntegration(workspaceId: string, provider = "razorpay"): boolean {
+    const db = initDb();
+    if (!db.integrations) return false;
+    const compositeKey = `${workspaceId}:${provider}`;
+    if (db.integrations[compositeKey]) {
+      delete db.integrations[compositeKey];
+      saveToDisk(db);
+      return true;
+    }
+    return false;
+  },
 };
+
 

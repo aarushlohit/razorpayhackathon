@@ -192,7 +192,7 @@ export interface ToolExecutionResult {
   success: boolean;
   output: string;
   payload?: Record<string, any>;
-  provider_environment?: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX" | "SANDBOX";
+  provider_environment?: "RAZORPAY_LIVE" | "RAZORPAY_TEST" | "DEVELOPMENT_SANDBOX" | "SANDBOX";
 }
 
 export interface OutcomeVerification {
@@ -259,3 +259,39 @@ export interface SimulatorConfig {
   high_value_limit?: number;
   high_value_threshold?: number;
 }
+
+export type IntegrationProvider = "razorpay" | "gemini" | "nvidia" | "opencode" | "supabase";
+export type IntegrationMode = "test" | "live";
+export type IntegrationStatus = "connected" | "not_connected" | "invalid_credentials" | "connection_failed" | "error";
+
+export interface EncryptedSecretRecord {
+  ciphertext: string;
+  iv: string;
+  tag: string;
+}
+
+export interface WorkspaceIntegration {
+  id: string;
+  workspace_id: string;
+  provider: "razorpay" | string;
+  mode: IntegrationMode;
+  key_id: string;
+  encrypted_key_secret: EncryptedSecretRecord;
+  encrypted_webhook_secret?: EncryptedSecretRecord;
+  status: IntegrationStatus;
+  last_validated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicIntegrationStatus {
+  connected: boolean;
+  provider: string;
+  mode: IntegrationMode | null;
+  status: IntegrationStatus;
+  key_id_masked: string | null;
+  has_webhook_secret: boolean;
+  last_validated_at: string | null;
+  capabilities: string[];
+}
+

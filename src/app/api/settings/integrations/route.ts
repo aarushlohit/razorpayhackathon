@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
+import { Database } from "@/lib/db";
+import { RazorpayClient } from "@/lib/razorpay/client";
 
 export async function GET() {
   try {
     const { workspace } = await requireAuth();
 
-    const razorpayConfigured = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+    const workspaceRzp = Database.getIntegration(workspace.id, "razorpay");
+    const envRazorpayConfigured = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+    const razorpayConnected = workspaceRzp ? workspaceRzp.status === "connected" : envRazorpayConfigured;
+    const razorpayMode = workspaceRzp ? workspaceRzp.mode : (process.env.RAZORPAY_KEY_ID?.startsWith("rzp_live") ? "live" : "test");
+
     const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
     const nvidiaConfigured = Boolean(process.env.NVIDIA_API_KEY || process.env.NIM_API_KEY);
     const opencodeConfigured = Boolean(process.env.OPENCODE_API_KEY);
@@ -16,6 +22,17 @@ export async function GET() {
       data: {
         workspace_provider: workspace.provider,
         integrations: [
+          {
+            id: "razorpay",
+            name: "Razorpay Payments API",
+            status: razorpayConnected
+              ? `CONNECTED (${razorpayMode.toUpperCase()} MODE)`
+              : "NOT_CONNECTED",
+            description: razorpayConnected
+              ? `Live authenticated ${razorpayMode === "live" ? "Production" : "Test"} API endpoint for payment and refund inspection.`
+              : "User credentials required. Connect your Razorpay Test/Live account in settings.",
+            endpoint: "https://api.razorpay.com/v1",
+          },
           {
             id: "gemini",
             name: "Google Gemini 3.6 / 2.5 Flash",
@@ -36,15 +53,6 @@ export async function GET() {
             status: nvidiaConfigured ? "CONNECTED" : "NOT_CONFIGURED",
             description: "NVIDIA Cloud Functions API via integrate.api.nvidia.com.",
             endpoint: "https://integrate.api.nvidia.com/v1",
-          },
-          {
-            id: "razorpay",
-            name: "Razorpay Payments API",
-            status: razorpayConfigured ? "CONNECTED" : "DEVELOPMENT_SANDBOX",
-            description: razorpayConfigured
-              ? "Live authenticated API endpoint for payment and refund inspection."
-              : "Development Sandbox active. Configure RAZORPAY_KEY_ID/SECRET for live mode.",
-            endpoint: "https://api.razorpay.com/v1",
           },
           {
             id: "supabase",

@@ -1,12 +1,19 @@
-import { razorpayClient } from "./client";
+import { RazorpayClient, razorpayClient } from "./client";
 import type { RazorpayPaymentItem } from "./types";
 
-export async function fetchRazorpayPayment(paymentId: string): Promise<{
+export async function fetchRazorpayPayment(
+  paymentId: string,
+  options?: { workspaceId?: string; client?: RazorpayClient }
+): Promise<{
   success: boolean;
   payment?: RazorpayPaymentItem;
   error?: string;
 }> {
-  const res = await razorpayClient.request<RazorpayPaymentItem>(`/payments/${paymentId}`, {
+  const client =
+    options?.client ||
+    (options?.workspaceId ? RazorpayClient.forWorkspace(options.workspaceId) : razorpayClient);
+
+  const res = await client.request<RazorpayPaymentItem>(`/payments/${paymentId}`, {
     method: "GET",
   });
 
@@ -14,5 +21,8 @@ export async function fetchRazorpayPayment(paymentId: string): Promise<{
     return { success: true, payment: res.data };
   }
 
-  return { success: false, error: res.error || "Payment not found." };
+  return {
+    success: false,
+    error: res.error || "Payment not found in connected Razorpay account.",
+  };
 }

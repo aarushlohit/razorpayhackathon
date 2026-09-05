@@ -1,8 +1,9 @@
 import { Database } from "../db";
 import { ToolExecutionResult, OutcomeVerification, AllowedAction, EventTrailItem, CaseStatus } from "@/types";
+import { RazorpayClient } from "../razorpay/client";
 
 export interface PaymentProviderAdapter {
-  providerName: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX";
+  providerName: "RAZORPAY_LIVE" | "RAZORPAY_TEST" | "DEVELOPMENT_SANDBOX";
   resendWebhook(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
   refreshStatus(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
   reconcileState(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
@@ -11,7 +12,7 @@ export interface PaymentProviderAdapter {
 }
 
 export class SandboxPaymentAdapter implements PaymentProviderAdapter {
-  providerName: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX" = "DEVELOPMENT_SANDBOX";
+  providerName: "RAZORPAY_LIVE" | "RAZORPAY_TEST" | "DEVELOPMENT_SANDBOX" = "DEVELOPMENT_SANDBOX";
 
   async resendWebhook(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
     const refundCase = Database.getCase(workspaceId, caseId);
@@ -203,35 +204,22 @@ export class SandboxPaymentAdapter implements PaymentProviderAdapter {
 export class RazorpayLiveAdapter extends SandboxPaymentAdapter {
   override providerName = "RAZORPAY_LIVE" as const;
 
-  private getAuthHeader(): string | null {
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) return null;
-    return "Basic " + Buffer.from(`${keyId}:${keySecret}`).toString("base64");
-  }
-
   override async refreshStatus(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
-    const auth = this.getAuthHeader();
     const refundCase = Database.getCase(workspaceId, caseId);
     if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
 
-    if (!auth || !refundCase.refund_id.startsWith("rfnd_")) {
+    const client = RazorpayClient.forWorkspace(workspaceId);
+    if (!client.isConfigured() || !refundCase.refund_id.startsWith("rfnd_")) {
       return super.refreshStatus(workspaceId, caseId);
     }
 
     try {
-      // Real authenticated Razorpay API call
-      const res = await fetch(`https://api.razorpay.com/v1/refunds/${refundCase.refund_id}`, {
+      const res = await client.request<any>(`/refunds/${refundCase.refund_id}`, {
         method: "GET",
-        headers: {
-          Authorization: auth,
-          "Content-Type": "application/json",
-        },
-        signal: AbortSignal.timeout(6000),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status === 200 && res.data) {
+        const data = res.data;
         const status = data.status || "processed";
         refundCase.current_status = status === "processed" ? "RESOLVED" : "INVESTIGATING";
         Database.updateCase(workspaceId, refundCase);
@@ -243,56 +231,57 @@ export class RazorpayLiveAdapter extends SandboxPaymentAdapter {
           success: true,
           output: `[Razorpay API] Fetched refund ${refundCase.refund_id}: status is '${status}'.`,
           payload: data,
-          provider_environment: "RAZORPAY_LIVE",
+          provider_environment: client.mode === "live" ? "RAZORPAY_LIVE" : "RAZORPAY_TEST",
         };
       }
     } catch (err: any) {
-      console.warn("Razorpay API live call failed:", err?.message);
+      console.warn("[RazorpayLiveAdapter] API query failed:", err?.message);
     }
 
     return super.refreshStatus(workspaceId, caseId);
   }
 
   override async verifyRefundStatus(workspaceId: string, caseId: string): Promise<OutcomeVerification> {
-    const auth = this.getAuthHeader();
     const refundCase = Database.getCase(workspaceId, caseId);
     if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
 
-    if (!auth || !refundCase.refund_id.startsWith("rfnd_")) {
+    const client = RazorpayClient.forWorkspace(workspaceId);
+    if (!client.isConfigured() || !refundCase.refund_id.startsWith("rfnd_")) {
       return super.verifyRefundStatus(workspaceId, caseId);
     }
 
     try {
-      const res = await fetch(`https://api.razorpay.com/v1/refunds/${refundCase.refund_id}`, {
+      const res = await client.request<any>(`/refunds/${refundCase.refund_id}`, {
         method: "GET",
-        headers: {
-          Authorization: auth,
-          "Content-Type": "application/json",
-        },
-        signal: AbortSignal.timeout(6000),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status === 200 && res.data) {
+        const data = res.data;
         if (data.status === "processed") {
           return {
             verified_at: new Date().toISOString(),
             observed_status: "RESOLVED",
             remediation_effective: true,
-            details: `[Razorpay API] Verified refund ${refundCase.refund_id} is 'processed' with payment_id ${data.payment_id}.`,
+            details: `[Razorpay API] Verified refund ${refundCase.refund_id} is 'processed' (Payment: ${data.payment_id}).`,
           };
         }
       }
     } catch (err: any) {
-      console.warn("Razorpay API live verification failed:", err?.message);
+      console.warn("[RazorpayLiveAdapter] API verification failed:", err?.message);
     }
 
     return super.verifyRefundStatus(workspaceId, caseId);
   }
 }
 
-export function getPaymentAdapter(provider?: string): PaymentProviderAdapter {
-  if (provider === "razorpay_live" && process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+export function getPaymentAdapter(provider?: string, workspaceId?: string): PaymentProviderAdapter {
+  if (workspaceId) {
+    const client = RazorpayClient.forWorkspace(workspaceId);
+    if (client.isConfigured()) {
+      return new RazorpayLiveAdapter();
+    }
+  }
+  if (provider === "razorpay_live" || provider === "razorpay_test") {
     return new RazorpayLiveAdapter();
   }
   return new SandboxPaymentAdapter();

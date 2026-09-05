@@ -322,7 +322,7 @@ export function evaluateSecurityPolicy({
     evaluation_id: evaluationId,
     decision: "ALLOW",
     allowed: true,
-    action_to_take: action,
+    action_to_take: (action as AllowedAction) || "escalate_to_human",
     rule_triggered: "POLICY_CHECKS_PASSED",
     reason: `All 10 agentic security guardrails passed. Bounded action '${action}' approved for server-authorized execution.`,
     evaluated_at: evaluatedAt,

@@ -21,9 +21,9 @@ export async function POST(req: Request) {
 
     const workspaces = Database.getAllWorkspaces();
     const defaultWs = workspaces[0] || Database.createWorkspace({
-      id: "ws_default",
-      name: "Default Workspace",
-      slug: "default",
+      id: "ws_razorpay_demo",
+      name: "Razorpay Enterprise Ops",
+      slug: "razorpay-ops",
       provider: "sandbox",
       autonomy_mode: "APPROVAL_REQUIRED",
       confidence_threshold: 0.85,

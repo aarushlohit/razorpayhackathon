@@ -18,6 +18,8 @@ export interface RazorpayPaymentItem {
   vpa?: string;
   email?: string;
   contact?: string;
+  customer_id?: string;
+  notes?: Record<string, any>;
   fee?: number;
   tax?: number;
   error_code?: string;
