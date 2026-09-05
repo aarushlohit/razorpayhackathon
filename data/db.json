@@ -420,7 +420,7 @@
       "customer_id": "cust_87864",
       "customer_name": "Ishita Roy",
       "customer_vpa_or_account": "ishita.roy66@okhdfcbank",
-      "current_status": "INVESTIGATING",
+      "current_status": "ESCALATED_MAX_REMEDIATIONS",
       "failure_class": "LEDGER_MISMATCH",
       "is_planted_failure": false,
       "remediation_attempts": 1,
@@ -472,6 +472,14 @@
             "event_type": "ledger_reconciliation_sync",
             "status": "SUCCESS",
             "details": "Merchant accounting ledger synchronized with gateway settlement batch."
+          },
+          {
+            "id": "evt_act_esc_1788635043336",
+            "timestamp": "2026-09-05T19:04:03.336Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
           }
         ],
         "age_days": 4,
@@ -481,37 +489,169 @@
       },
       "id": "case_CS_345_0002",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T18:29:22.573Z",
+      "updated_at": "2026-09-05T19:04:03.336Z",
       "latest_diagnosis": {
         "likely_stage": "ledger_mismatch",
-        "confidence": 0.98,
+        "confidence": 0.95,
         "recommended_action": "reconcile_state",
-        "reasoning": "The Merchant Accounting Ledger is in a MISMATCH_PENDING state due to a race condition, while all other upstream systems (Gateway, Bank, Webhook, Beneficiary) show successful processing. No cross-system conflicts were detected.",
+        "reasoning": "The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.",
         "evidence_used": [
-          "Merchant Accounting Ledger: MISMATCH_PENDING",
-          "Internal settlement balance not debited due to race condition in accounting worker",
-          "Payment Gateway: ACKNOWLEDGED",
-          "Acquiring Bank / NPCI Switch: CREDIT_CONFIRMED",
-          "Webhook Delivery: DELIVERED",
-          "Beneficiary Destination: VALID_ACTIVE",
-          "Cross-System Conflict Detected: NO"
+          "merchant_ledger: ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker (Internal ledger failed to update immediately due to an accounting worker race condition)",
+          "merchant_ledger: ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch. (Ledger desynchronization was resolved on 2026-09-05 through batch synchronization)",
+          "settlement: CREDIT_CONFIRMED (Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01)",
+          "payment_gateway: ACKNOWLEDGED (Gateway verified transaction origin and debit balance successfully)"
         ],
+        "assessment": {
+          "primary_hypothesis": {
+            "code": "LEDGER_DESYNCHRONIZATION",
+            "label": "Merchant Accounting Ledger Desynchronization",
+            "confidence": 0.95
+          },
+          "summary": "The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.",
+          "evidence": [
+            {
+              "source": "merchant_ledger",
+              "observed": "ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker",
+              "interpretation": "Internal ledger failed to update immediately due to an accounting worker race condition",
+              "supports": true
+            },
+            {
+              "source": "merchant_ledger",
+              "observed": "ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch.",
+              "interpretation": "Ledger desynchronization was resolved on 2026-09-05 through batch synchronization",
+              "supports": true
+            },
+            {
+              "source": "settlement",
+              "observed": "CREDIT_CONFIRMED",
+              "interpretation": "Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01",
+              "supports": true
+            },
+            {
+              "source": "payment_gateway",
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "Gateway verified transaction origin and debit balance successfully",
+              "supports": true
+            }
+          ],
+          "alternative_hypotheses": [
+            {
+              "label": "Bank Settlement Delay",
+              "confidence": 0.05
+            }
+          ],
+          "recommended_action": {
+            "action": "reconcile_state",
+            "reason": "Confirm cross-system state consistency across merchant ledger, gateway, and bank settlement following the successful ledger synchronization."
+          },
+          "uncertainty": "Whether customer-facing notification updated correctly at the moment of ledger synchronization."
+        },
         "provider": "gemini",
-        "model": "gemini-2.5-flash",
-        "raw_response": "{\n  \"likely_stage\": \"ledger_mismatch\",\n  \"confidence\": 0.98,\n  \"recommended_action\": \"reconcile_state\",\n  \"reasoning\": \"The Merchant Accounting Ledger is in a MISMATCH_PENDING state due to a race condition, while all other upstream systems (Gateway, Bank, Webhook, Beneficiary) show successful processing. No cross-system conflicts were detected.\",\n  \"evidence_used\": [\n    \"Merchant Accounting Ledger: MISMATCH_PENDING\",\n    \"Internal settlement balance not debited due to race condition in accounting worker\",\n    \"Payment Gateway: ACKNOWLEDGED\",\n    \"Acquiring Bank / NPCI Switch: CREDIT_CONFIRMED\",\n    \"Webhook Delivery: DELIVERED\",\n    \"Beneficiary Destination: VALID_ACTIVE\",\n    \"Cross-System Conflict Detected: NO\"\n  ]\n}",
-        "latency_ms": 5232
+        "model": "gemini-3.6-flash",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"LEDGER_DESYNCHRONIZATION\",\n      \"label\": \"Merchant Accounting Ledger Desynchronization\",\n      \"confidence\": 0.95\n    },\n    \"summary\": \"The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.\",\n    \"evidence\": [\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker\",\n        \"interpretation\": \"Internal ledger failed to update immediately due to an accounting worker race condition\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch.\",\n        \"interpretation\": \"Ledger desynchronization was resolved on 2026-09-05 through batch synchronization\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"settlement\",\n        \"observed\": \"CREDIT_CONFIRMED\",\n        \"interpretation\": \"Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"Gateway verified transaction origin and debit balance successfully\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Settlement Delay\",\n        \"confidence\": 0.05\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"reconcile_state\",\n      \"reason\": \"Confirm cross-system state consistency across merchant ledger, gateway, and bank settlement following the successful ledger synchronization.\"\n    },\n    \"uncertainty\": \"Whether customer-facing notification updated correctly at the moment of ledger synchronization.\"\n  },\n  \"confidence\": 0.95\n}",
+        "latency_ms": 8606
       },
       "latest_policy": {
-        "allowed": true,
-        "action_to_take": "reconcile_state",
-        "rule_triggered": "POLICY_CHECKS_PASSED",
-        "reason": "All deterministic policy rules passed. Confidence 98% >= 85%, Amount ₹6,266 <= ₹50,000.",
+        "evaluation_id": "eval_10280e24-53bb-4012-9286-be4e4cbaee0a",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_06_IDEMPOTENCY",
+        "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops.",
+        "evaluated_at": "2026-09-05T19:04:03.309Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": true,
+            "observed": "95.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (95.0%) meets calibrated cutoff (≥ 85%)."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹6,266",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹6,266 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'reconcile_state' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "LEDGER_DESYNCHRONIZATION -> reconcile_state",
+            "threshold": "reconcile_state, escalate_to_human",
+            "reason": "Remediation action 'reconcile_state' is logically compatible with verified failure stage 'LEDGER_DESYNCHRONIZATION'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'reconcile_state' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'reconcile_state' requested."
+          }
+        ],
         "checks": {
           "confidence_passed": true,
           "amount_passed": true,
-          "remediation_limit_passed": true,
+          "remediation_limit_passed": false,
           "allowed_action_passed": true,
-          "evidence_complete_passed": true
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
         }
       },
       "latest_action": {
@@ -33659,6 +33799,302 @@
       "timestamp": "2026-09-05T19:01:41.498Z",
       "previous_hash": "2c44ea020a57b71a904f07f93e63a9c49a81df30371973b4d139a085ffc456d1",
       "event_hash": "2174ebe92783a26ad216857ddf9ed4430ca2478d717b021f1bbe5a2517126522"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0002 in state 'INVESTIGATING' (Liability: ₹6,266, Age: 4d).",
+      "status": "INFO",
+      "id": "audit_1788635019733_4b012a",
+      "timestamp": "2026-09-05T19:03:39.733Z",
+      "previous_hash": "2174ebe92783a26ad216857ddf9ed4430ca2478d717b021f1bbe5a2517126522",
+      "event_hash": "e58e24c387bd9d1ccbfac9b44d6cbf8d6529a81684e218b3dd6c5b58532b5e67"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=DELIVERED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0002",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "DELIVERED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0002",
+            "timestamp": "2026-09-01T12:37:36.412Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹6,266"
+          },
+          {
+            "id": "evt_gw_CS_345_0002",
+            "timestamp": "2026-09-01T12:37:37.912Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0002",
+            "timestamp": "2026-09-01T12:38:36.412Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Bank settlement cleared successfully"
+          },
+          {
+            "id": "evt_ledger_CS_345_0002",
+            "timestamp": "2026-09-01T12:38:38.412Z",
+            "event_type": "ledger_reconciliation_flag",
+            "system": "MERCHANT_LEDGER",
+            "status": "PENDING",
+            "details": "Internal settlement balance not debited due to race condition in accounting worker"
+          },
+          {
+            "id": "evt_act_rec_1788612032371",
+            "timestamp": "2026-09-05T12:40:32.371Z",
+            "system": "MERCHANT_LEDGER",
+            "event_type": "ledger_reconciliation_sync",
+            "status": "SUCCESS",
+            "details": "Merchant accounting ledger synchronized with gateway settlement batch."
+          },
+          {
+            "id": "evt_act_esc_1788635043336",
+            "timestamp": "2026-09-05T19:04:03.336Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          }
+        ],
+        "age_days": 4,
+        "amount": 6266,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788635019760_9647a7",
+      "timestamp": "2026-09-05T19:03:39.760Z",
+      "previous_hash": "e58e24c387bd9d1ccbfac9b44d6cbf8d6529a81684e218b3dd6c5b58532b5e67",
+      "event_hash": "5a324ac80dfdae6c3a3f95ab0605efa974162e3459c5c775965ea8a4d016e472"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "DIAGNOSE",
+      "action": "DIAGNOSE",
+      "provider": "sandbox",
+      "message": "AI Diagnosis [gemini / gemini-3.6-flash]: Stage='LEDGER_MISMATCH' | Confidence=95% | Recommended='reconcile_state'. The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.",
+      "status": "SUCCESS",
+      "details": {
+        "likely_stage": "ledger_mismatch",
+        "confidence": 0.95,
+        "recommended_action": "reconcile_state",
+        "reasoning": "The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.",
+        "evidence_used": [
+          "merchant_ledger: ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker (Internal ledger failed to update immediately due to an accounting worker race condition)",
+          "merchant_ledger: ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch. (Ledger desynchronization was resolved on 2026-09-05 through batch synchronization)",
+          "settlement: CREDIT_CONFIRMED (Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01)",
+          "payment_gateway: ACKNOWLEDGED (Gateway verified transaction origin and debit balance successfully)"
+        ],
+        "assessment": {
+          "primary_hypothesis": {
+            "code": "LEDGER_DESYNCHRONIZATION",
+            "label": "Merchant Accounting Ledger Desynchronization",
+            "confidence": 0.95
+          },
+          "summary": "The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.",
+          "evidence": [
+            {
+              "source": "merchant_ledger",
+              "observed": "ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker",
+              "interpretation": "Internal ledger failed to update immediately due to an accounting worker race condition",
+              "supports": true
+            },
+            {
+              "source": "merchant_ledger",
+              "observed": "ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch.",
+              "interpretation": "Ledger desynchronization was resolved on 2026-09-05 through batch synchronization",
+              "supports": true
+            },
+            {
+              "source": "settlement",
+              "observed": "CREDIT_CONFIRMED",
+              "interpretation": "Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01",
+              "supports": true
+            },
+            {
+              "source": "payment_gateway",
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "Gateway verified transaction origin and debit balance successfully",
+              "supports": true
+            }
+          ],
+          "alternative_hypotheses": [
+            {
+              "label": "Bank Settlement Delay",
+              "confidence": 0.05
+            }
+          ],
+          "recommended_action": {
+            "action": "reconcile_state",
+            "reason": "Confirm cross-system state consistency across merchant ledger, gateway, and bank settlement following the successful ledger synchronization."
+          },
+          "uncertainty": "Whether customer-facing notification updated correctly at the moment of ledger synchronization."
+        },
+        "provider": "gemini",
+        "model": "gemini-3.6-flash",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"LEDGER_DESYNCHRONIZATION\",\n      \"label\": \"Merchant Accounting Ledger Desynchronization\",\n      \"confidence\": 0.95\n    },\n    \"summary\": \"The refund was successfully processed by the payment gateway and credited by the bank, but experienced a 4-day delay in internal merchant accounting due to a race condition in the accounting worker.\",\n    \"evidence\": [\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"ledger_reconciliation_flag | PENDING -> Internal settlement balance not debited due to race condition in accounting worker\",\n        \"interpretation\": \"Internal ledger failed to update immediately due to an accounting worker race condition\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"ledger_reconciliation_sync | SUCCESS -> Merchant accounting ledger synchronized with gateway settlement batch.\",\n        \"interpretation\": \"Ledger desynchronization was resolved on 2026-09-05 through batch synchronization\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"settlement\",\n        \"observed\": \"CREDIT_CONFIRMED\",\n        \"interpretation\": \"Bank settlement cleared successfully at the NPCI switch layer on 2026-09-01\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"Gateway verified transaction origin and debit balance successfully\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Settlement Delay\",\n        \"confidence\": 0.05\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"reconcile_state\",\n      \"reason\": \"Confirm cross-system state consistency across merchant ledger, gateway, and bank settlement following the successful ledger synchronization.\"\n    },\n    \"uncertainty\": \"Whether customer-facing notification updated correctly at the moment of ledger synchronization.\"\n  },\n  \"confidence\": 0.95\n}",
+        "latency_ms": 8606
+      },
+      "id": "audit_1788635043295_9af937",
+      "timestamp": "2026-09-05T19:04:03.295Z",
+      "previous_hash": "5a324ac80dfdae6c3a3f95ab0605efa974162e3459c5c775965ea8a4d016e472",
+      "event_hash": "aac7542a5e0abd6fb0d53954eb3e5356595ea7bc6a415dfba99cb6f52da014f7"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "POLICY_GATE",
+      "action": "POLICY_GATE",
+      "provider": "sandbox",
+      "message": "POLICY GATE TRIGGERED [RULE_06_IDEMPOTENCY]: Autonomous execution blocked. Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops.",
+      "status": "WARNING",
+      "details": {
+        "evaluation_id": "eval_10280e24-53bb-4012-9286-be4e4cbaee0a",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_06_IDEMPOTENCY",
+        "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops.",
+        "evaluated_at": "2026-09-05T19:04:03.309Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": true,
+            "observed": "95.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (95.0%) meets calibrated cutoff (≥ 85%)."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹6,266",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹6,266 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'reconcile_state' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "LEDGER_DESYNCHRONIZATION -> reconcile_state",
+            "threshold": "reconcile_state, escalate_to_human",
+            "reason": "Remediation action 'reconcile_state' is logically compatible with verified failure stage 'LEDGER_DESYNCHRONIZATION'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'reconcile_state' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "reconcile_state",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'reconcile_state' requested."
+          }
+        ],
+        "checks": {
+          "confidence_passed": true,
+          "amount_passed": true,
+          "remediation_limit_passed": false,
+          "allowed_action_passed": true,
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
+        }
+      },
+      "id": "audit_1788635043351_337dfc",
+      "timestamp": "2026-09-05T19:04:03.351Z",
+      "previous_hash": "aac7542a5e0abd6fb0d53954eb3e5356595ea7bc6a415dfba99cb6f52da014f7",
+      "event_hash": "26d546645a962cf9c85ec26b590564a61527e07a99a934375b1c75e6ec592718"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "OUTCOME",
+      "action": "OUTCOME",
+      "provider": "sandbox",
+      "message": "Closed loop with Human Escalation [Status: ESCALATED_MAX_REMEDIATIONS]. Zero financial exposure incurred.",
+      "status": "INFO",
+      "id": "audit_1788635043365_f41294",
+      "timestamp": "2026-09-05T19:04:03.365Z",
+      "previous_hash": "26d546645a962cf9c85ec26b590564a61527e07a99a934375b1c75e6ec592718",
+      "event_hash": "0a302923367f5796beeeafa960b47004dcac2a6dbe41db8bda5e0d5805c8663b"
     }
   ],
   "sandbox_configs": {
@@ -38654,6 +39090,100 @@
         }
       ],
       "evaluated_at": "2026-09-05T19:01:41.433Z"
+    },
+    "eval_10280e24-53bb-4012-9286-be4e4cbaee0a": {
+      "evaluation_id": "eval_10280e24-53bb-4012-9286-be4e4cbaee0a",
+      "case_id": "CS_345_0002",
+      "workspace_id": "ws_razorpay_demo",
+      "confidence": 0.95,
+      "amount": 6266,
+      "requested_action": "reconcile_state",
+      "decision": "HALT",
+      "rule_triggered": "RULE_06_IDEMPOTENCY",
+      "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops.",
+      "rules": [
+        {
+          "id": "RULE_01_CONFIDENCE",
+          "name": "AI Confidence Threshold",
+          "passed": true,
+          "observed": "95.0%",
+          "threshold": "≥ 85%",
+          "reason": "AI confidence (95.0%) meets calibrated cutoff (≥ 85%)."
+        },
+        {
+          "id": "RULE_02_HIGH_VALUE",
+          "name": "High Value Liability Ceiling",
+          "passed": true,
+          "observed": "₹6,266",
+          "threshold": "≤ ₹50,000",
+          "reason": "Refund liability ₹6,266 is within autonomous ceiling (≤ ₹50,000)."
+        },
+        {
+          "id": "RULE_03_ACTION_ALLOWLIST",
+          "name": "Server Action Allowlist",
+          "passed": true,
+          "observed": "reconcile_state",
+          "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+          "reason": "Action 'reconcile_state' is registered in server-side allowlist."
+        },
+        {
+          "id": "RULE_04_ACTION_COMPATIBILITY",
+          "name": "Diagnosis / Action Compatibility",
+          "passed": true,
+          "observed": "LEDGER_DESYNCHRONIZATION -> reconcile_state",
+          "threshold": "reconcile_state, escalate_to_human",
+          "reason": "Remediation action 'reconcile_state' is logically compatible with verified failure stage 'LEDGER_DESYNCHRONIZATION'."
+        },
+        {
+          "id": "RULE_05_CASE_STATE",
+          "name": "Case State Eligibility",
+          "passed": true,
+          "observed": "INVESTIGATING",
+          "threshold": "LIMBO, INVESTIGATING",
+          "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+        },
+        {
+          "id": "RULE_06_IDEMPOTENCY",
+          "name": "Idempotency & Remediation Limit",
+          "passed": false,
+          "observed": "1 attempts",
+          "threshold": "< 1 attempt(s)",
+          "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+        },
+        {
+          "id": "RULE_07_WORKSPACE_ISOLATION",
+          "name": "Workspace Multi-Tenant Isolation",
+          "passed": true,
+          "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+          "threshold": "Strict Match: ws_razorpay_demo",
+          "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+        },
+        {
+          "id": "RULE_08_PROVIDER_STATE",
+          "name": "Provider Telemetry Freshness",
+          "passed": true,
+          "observed": "FRESH",
+          "threshold": "Complete & Non-Stale Telemetry",
+          "reason": "Provider telemetry is complete and matches live evidence state."
+        },
+        {
+          "id": "RULE_09_APPROVED_TOOL",
+          "name": "Approved Execution Tooling",
+          "passed": true,
+          "observed": "reconcile_state",
+          "threshold": "Server-controlled handler implementation",
+          "reason": "Tool 'reconcile_state' maps to a verified server-controlled adapter method."
+        },
+        {
+          "id": "RULE_10_ESCALATION_CHECK",
+          "name": "Autonomous Action vs Escalation",
+          "passed": true,
+          "observed": "reconcile_state",
+          "threshold": "Action != escalate_to_human",
+          "reason": "Autonomous remediation action 'reconcile_state' requested."
+        }
+      ],
+      "evaluated_at": "2026-09-05T19:04:03.309Z"
     }
   },
   "integrations": {}
