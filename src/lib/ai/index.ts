@@ -203,8 +203,8 @@ export async function runAIDiagnosis(
   const prompt = formatEvidenceForPrompt(evidence, refundCase);
   const startedAt = Date.now();
 
-  // Overall 35-second deadline across all provider attempts
-  const overallDeadline = startedAt + 35_000;
+  // Overall 50-second deadline across all provider attempts
+  const overallDeadline = startedAt + 50_000;
 
   const geminiKey =
     keyOverride?.provider === "gemini" && keyOverride.apiKey
@@ -227,14 +227,12 @@ export async function runAIDiagnosis(
 
   async function tryGemini(): Promise<DiagnosisResult | null> {
     if (!geminiKey || timeRemaining() < 2500) return null;
-    // gemini-2.5-flash is ultra-fast (~1.6s) and confirmed working. gemini-3-flash-preview is backup.
-    // gemini-2.0-flash and 1.5-flash are deprecated/404.
     const models = ["gemini-2.5-flash", "gemini-3-flash-preview"];
     for (const model of models) {
       if (timeRemaining() < 2500) break;
       try {
         const reqStart = Date.now();
-        const timeout = Math.min(10_000, timeRemaining() - 300);
+        const timeout = Math.min(12_000, timeRemaining() - 300);
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
           {
@@ -298,18 +296,15 @@ export async function runAIDiagnosis(
 
   async function tryOpenCode(): Promise<DiagnosisResult | null> {
     if (!openCodeKey || timeRemaining() < 2500) return null;
-    // ling-3.0-flash-fin-free is verified operational (~2.4s).
-    // mimo-v2.5-free is prone to 429; nemotron is slow.
     const openCodeModels = [
       "ling-3.0-flash-fin-free",
       "mimo-v2.5-free",
-      "nemotron-3.5-lightning-free",
     ];
     for (const ocModel of openCodeModels) {
       if (timeRemaining() < 2500) break;
       try {
         const reqStart = Date.now();
-        const timeout = Math.min(8_000, timeRemaining() - 300);
+        const timeout = Math.min(10_000, timeRemaining() - 300);
         const res = await fetch("https://opencode.ai/zen/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -319,7 +314,7 @@ export async function runAIDiagnosis(
           body: JSON.stringify({
             model: ocModel,
             messages: [
-              { role: "system", content: "You are Yokai AI document assistant. Return valid JSON only." },
+              { role: "system", content: "You are an expert payment investigation agent. Output strict valid JSON only matching the schema." },
               { role: "user", content: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` },
             ],
             temperature: 0.2,
@@ -365,13 +360,12 @@ export async function runAIDiagnosis(
 
   async function tryNvidia(): Promise<DiagnosisResult | null> {
     if (!nvidiaKey || timeRemaining() < 2500) return null;
-    // meta/llama-3.2-11b-vision-instruct is verified operational (HTTP 200)
     const nimModels = ["meta/llama-3.2-11b-vision-instruct", "meta/llama-3.2-90b-vision-instruct"];
     for (const nimModel of nimModels) {
       if (timeRemaining() < 2500) break;
       try {
         const reqStart = Date.now();
-        const timeout = Math.min(10_000, timeRemaining() - 300);
+        const timeout = Math.min(25_000, timeRemaining() - 300);
         const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -381,7 +375,7 @@ export async function runAIDiagnosis(
           body: JSON.stringify({
             model: nimModel,
             messages: [
-              { role: "system", content: "You are Yokai AI. Output strict JSON only matching the requested schema." },
+              { role: "system", content: "You are an expert payment operations agent. Output strict valid JSON only matching the schema." },
               { role: "user", content: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` },
             ],
             temperature: 0.2,
@@ -438,10 +432,10 @@ export async function runAIDiagnosis(
     providerList.push({ name: "gemini", fn: tryGemini });
     providerList.push({ name: "opencode", fn: tryOpenCode });
   } else {
-    // Default fallback order: Gemini -> OpenCode -> NVIDIA
+    // Default fallback order: Gemini -> NVIDIA -> OpenCode
     providerList.push({ name: "gemini", fn: tryGemini });
-    providerList.push({ name: "opencode", fn: tryOpenCode });
     providerList.push({ name: "nvidia", fn: tryNvidia });
+    providerList.push({ name: "opencode", fn: tryOpenCode });
   }
 
   for (const p of providerList) {

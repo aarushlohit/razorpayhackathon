@@ -185,6 +185,14 @@
             "event_type": "escalated_to_human_ops",
             "status": "PENDING",
             "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "evt_act_esc_1788632915403",
+            "timestamp": "2026-09-05T18:28:35.403Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           }
         ],
         "age_days": 10,
@@ -194,70 +202,34 @@
       },
       "id": "case_CS_345_0001",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T17:22:44.130Z",
+      "updated_at": "2026-09-05T18:28:35.403Z",
       "latest_diagnosis": {
-        "likely_stage": "webhook_missing",
-        "confidence": 0.6,
+        "likely_stage": "ambiguous",
+        "confidence": 0,
         "recommended_action": "escalate_to_human",
-        "reasoning": "The refund transaction is stuck due to a failed webhook delivery attempt, which timed out after 10,000ms. Payment was verified and credit confirmed by the acquiring bank, but the merchant never received final delivery confirmation.",
-        "evidence_used": [
-          "webhook_dispatcher: webhook_delivery_attempt | FAILED (The webhook delivery attempt to the merchant's endpoint timed out after 10 seconds, indicating a failure in delivering the refund notification.)",
-          "gateway: escalated_to_human_ops | PENDING (The gateway has escalated the case to human ops review queue due to low model confidence, indicating that the evidence is ambiguous or contradictory.)"
-        ],
-        "assessment": {
-          "primary_hypothesis": {
-            "code": "WEBHOOK_DELIVERY_FAILURE",
-            "label": "Webhook Delivery Failure",
-            "confidence": 0.6
-          },
-          "summary": "The refund transaction is stuck due to a failed webhook delivery attempt, which timed out after 10,000ms. Payment was verified and credit confirmed by the acquiring bank, but the merchant never received final delivery confirmation.",
-          "evidence": [
-            {
-              "source": "webhook_dispatcher",
-              "observed": "webhook_delivery_attempt | FAILED",
-              "interpretation": "The webhook delivery attempt to the merchant's endpoint timed out after 10 seconds, indicating a failure in delivering the refund notification.",
-              "supports": true
-            },
-            {
-              "source": "gateway",
-              "observed": "escalated_to_human_ops | PENDING",
-              "interpretation": "The gateway has escalated the case to human ops review queue due to low model confidence, indicating that the evidence is ambiguous or contradictory.",
-              "supports": true
-            }
-          ],
-          "alternative_hypotheses": [
-            {
-              "label": "Ledger Desynchronization",
-              "confidence": 0.15
-            }
-          ],
-          "recommended_action": {
-            "action": "escalate_to_human",
-            "reason": "The evidence is ambiguous or contradictory, and the model confidence is below the strict safety cutoff. Human intervention is required to resolve the issue."
-          },
-          "uncertainty": "The exact reason for the webhook delivery failure is unknown, and the evidence does not provide enough information to determine the root cause."
-        },
-        "provider": "nvidia",
-        "model": "meta/llama-3.2-11b-vision-instruct",
-        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Webhook Delivery Failure\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"The refund transaction is stuck due to a failed webhook delivery attempt, which timed out after 10 seconds. The gateway has escalated the case to human ops review queue due to low model confidence.\",\n    \"evidence\": [\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"webhook_delivery_attempt | FAILED\",\n        \"interpretation\": \"The webhook delivery attempt to the merchant's endpoint timed out after 10 seconds, indicating a failure in delivering the refund notification.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"gateway\",\n        \"observed\": \"escalated_to_human_ops | PENDING\",\n        \"interpretation\": \"The gateway has escalated the case to human ops review queue due to low model confidence, indicating that the evidence is ambiguous or contradictory.\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Ledger Desynchronization\",\n        \"confidence\": 0.15\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"escalate_to_human\",\n      \"reason\": \"The evidence is ambiguous or contradictory, and the model confidence is below the strict safety cutoff. Human intervention is required to resolve the issue.\"\n    },\n    \"uncertainty\": \"The exact reason for the webhook delivery failure is unknown, and the evidence does not provide enough information to determine the root cause.\"\n  },\n  \"confidence\": 0.60\n}",
-        "latency_ms": 9395
+        "reasoning": "AI provider unavailable or all providers returned invalid responses. Real AI API key required for autonomous diagnosis. Human review required.",
+        "evidence_used": [],
+        "provider": "AI_UNAVAILABLE",
+        "model": "none",
+        "error": "No active AI provider returned a valid schema-compliant diagnosis.",
+        "latency_ms": 34701
       },
       "latest_policy": {
-        "evaluation_id": "eval_9177136c-65b3-4f3e-8266-841dace46e7b",
+        "evaluation_id": "eval_4149d511-1417-4f9c-84e9-6bd1f42acf20",
         "decision": "HALT",
         "allowed": false,
         "action_to_take": "escalate_to_human",
         "rule_triggered": "RULE_01_CONFIDENCE",
-        "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
-        "evaluated_at": "2026-09-05T17:22:44.098Z",
+        "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:28:35.380Z",
         "rules": [
           {
             "id": "RULE_01_CONFIDENCE",
             "name": "AI Confidence Threshold",
             "passed": false,
-            "observed": "60.0%",
+            "observed": "0.0%",
             "threshold": "≥ 85%",
-            "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+            "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           },
           {
             "id": "RULE_02_HIGH_VALUE",
@@ -279,9 +251,9 @@
             "id": "RULE_04_ACTION_COMPATIBILITY",
             "name": "Diagnosis / Action Compatibility",
             "passed": true,
-            "observed": "WEBHOOK_DELIVERY_FAILURE -> escalate_to_human",
-            "threshold": "resend_webhook, escalate_to_human",
-            "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+            "observed": "ambiguous -> escalate_to_human",
+            "threshold": "escalate_to_human",
+            "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
           },
           {
             "id": "RULE_05_CASE_STATE",
@@ -357,7 +329,7 @@
       "customer_id": "cust_87864",
       "customer_name": "Ishita Roy",
       "customer_vpa_or_account": "ishita.roy66@okhdfcbank",
-      "current_status": "RESOLVED",
+      "current_status": "INVESTIGATING",
       "failure_class": "LEDGER_MISMATCH",
       "is_planted_failure": false,
       "remediation_attempts": 1,
@@ -418,7 +390,7 @@
       },
       "id": "case_CS_345_0002",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T12:40:32.380Z",
+      "updated_at": "2026-09-05T18:29:22.573Z",
       "latest_diagnosis": {
         "likely_stage": "ledger_mismatch",
         "confidence": 0.98,
@@ -524,6 +496,14 @@
             "event_type": "escalated_to_human_ops",
             "status": "PENDING",
             "details": "Escalated to Human Ops Review Queue. Reason: Model confidence (70%) is below strict safety cutoff (85%). Evidence is ambiguous or contradictory."
+          },
+          {
+            "id": "evt_act_esc_1788633048457",
+            "timestamp": "2026-09-05T18:30:48.457Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           }
         ],
         "age_days": 4,
@@ -533,33 +513,162 @@
       },
       "id": "case_CS_345_0003",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T15:54:36.853Z",
+      "updated_at": "2026-09-05T18:30:48.457Z",
       "latest_diagnosis": {
-        "likely_stage": "bank_leg_stuck",
-        "confidence": 0.7,
-        "recommended_action": "refresh_status",
-        "reasoning": "The refund is stalled at the NPCI switch with a PENDING status and no RRN confirmation for 4 days, blocking subsequent webhook dispatch.",
+        "likely_stage": "webhook_missing",
+        "confidence": 0.6,
+        "recommended_action": "resend_webhook",
+        "reasoning": "Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.",
         "evidence_used": [
-          "NPCI_BANK: PENDING_SWITCH",
-          "Webhook Delivery: NOT_DISPATCHED",
-          "Age: 4 days in limbo"
+          "webhook_dispatcher: NOT_DISPATCHED (Webhook delivery confirmation is missing, indicating a failure in the delivery process.)",
+          "payment_gateway: ACKNOWLEDGED (Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.)",
+          "NPCI_BANK: PENDING_SWITCH (NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.)"
         ],
-        "provider": "gemini",
-        "model": "gemini-3-flash-preview",
-        "raw_response": "{\n  \"likely_stage\": \"bank_leg_stuck\",\n  \"confidence\": 0.70,\n  \"recommended_action\": \"refresh_status\",\n  \"reasoning\": \"The refund is stalled at the NPCI switch with a PENDING status and no RRN confirmation for 4 days, blocking subsequent webhook dispatch.\",\n  \"evidence_used\": [\n    \"NPCI_BANK: PENDING_SWITCH\",\n    \"Webhook Delivery: NOT_DISPATCHED\",\n    \"Age: 4 days in limbo\"\n  ]\n}",
-        "latency_ms": 5082
+        "assessment": {
+          "primary_hypothesis": {
+            "code": "WEBHOOK_DELIVERY_FAILURE",
+            "label": "Webhook delivery failure prevented refund processing",
+            "confidence": 0.6
+          },
+          "summary": "Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.",
+          "evidence": [
+            {
+              "source": "webhook_dispatcher",
+              "observed": "NOT_DISPATCHED",
+              "interpretation": "Webhook delivery confirmation is missing, indicating a failure in the delivery process.",
+              "supports": true
+            },
+            {
+              "source": "payment_gateway",
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.",
+              "supports": false
+            },
+            {
+              "source": "NPCI_BANK",
+              "observed": "PENDING_SWITCH",
+              "interpretation": "NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.",
+              "supports": true
+            }
+          ],
+          "alternative_hypotheses": [
+            {
+              "label": "Bank Leg Stalled",
+              "confidence": 0.2
+            }
+          ],
+          "recommended_action": {
+            "action": "resend_webhook",
+            "reason": "Resending the webhook will ensure its successful delivery and allow for refund processing to continue."
+          },
+          "uncertainty": "The exact cause of the webhook delivery failure cannot be determined without further investigation, but resending the webhook is a safe and reasonable next step."
+        },
+        "provider": "nvidia",
+        "model": "meta/llama-3.2-11b-vision-instruct",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Webhook delivery failure prevented refund processing\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.\",\n    \"evidence\": [\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"NOT_DISPATCHED\",\n        \"interpretation\": \"Webhook delivery confirmation is missing, indicating a failure in the delivery process.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.\",\n        \"supports\": false\n      },\n      {\n        \"source\": \"NPCI_BANK\",\n        \"observed\": \"PENDING_SWITCH\",\n        \"interpretation\": \"NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Leg Stalled\",\n        \"confidence\": 0.20\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"resend_webhook\",\n      \"reason\": \"Resending the webhook will ensure its successful delivery and allow for refund processing to continue.\"\n    },\n    \"uncertainty\": \"The exact cause of the webhook delivery failure cannot be determined without further investigation, but resending the webhook is a safe and reasonable next step.\"\n  },\n  \"confidence\": 0.60\n}",
+        "latency_ms": 7250
       },
       "latest_policy": {
+        "evaluation_id": "eval_17ec989f-07e3-4e26-b743-5ddb4430d646",
+        "decision": "HALT",
         "allowed": false,
         "action_to_take": "escalate_to_human",
-        "rule_triggered": "RULE_1_LOW_CONFIDENCE",
-        "reason": "Model confidence (70%) is below strict safety cutoff (85%). Evidence is ambiguous or contradictory.",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:30:48.431Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "60.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹1,267",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹1,267 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+            "threshold": "resend_webhook, escalate_to_human",
+            "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": true,
+            "observed": "0 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has undergone 0 previous autonomous remediations. Safe to attempt single idempotent execution."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'resend_webhook' requested."
+          }
+        ],
         "checks": {
           "confidence_passed": false,
           "amount_passed": true,
           "remediation_limit_passed": true,
           "allowed_action_passed": true,
-          "evidence_complete_passed": true
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
         }
       }
     },
@@ -574,7 +683,7 @@
       "customer_id": "cust_82826",
       "customer_name": "Diya Patel",
       "customer_vpa_or_account": "diya.patel66@okhdfcbank",
-      "current_status": "ESCALATED_MAX_REMEDIATIONS",
+      "current_status": "INVESTIGATING",
       "failure_class": "WEBHOOK_MISSING",
       "is_planted_failure": false,
       "remediation_attempts": 1,
@@ -643,7 +752,7 @@
       },
       "id": "case_CS_345_0004",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T16:19:41.963Z",
+      "updated_at": "2026-09-05T18:31:57.375Z",
       "latest_diagnosis": {
         "likely_stage": "webhook_missing",
         "confidence": 0.95,
@@ -849,7 +958,7 @@
       "customer_id": "cust_23132",
       "customer_name": "Vikram Malhotra",
       "customer_vpa_or_account": "vikram.malhotra74@okhdfcbank",
-      "current_status": "ESCALATED_MAX_REMEDIATIONS",
+      "current_status": "ESCALATED_LOW_CONFIDENCE",
       "failure_class": "WEBHOOK_MISSING",
       "is_planted_failure": false,
       "remediation_attempts": 1,
@@ -909,6 +1018,14 @@
             "event_type": "escalated_to_human_ops",
             "status": "PENDING",
             "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          },
+          {
+            "id": "evt_act_esc_1788633111832",
+            "timestamp": "2026-09-05T18:31:51.833Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
           }
         ],
         "age_days": 11,
@@ -918,97 +1035,162 @@
       },
       "id": "case_CS_345_0006",
       "workspace_id": "ws_razorpay_demo",
-      "updated_at": "2026-09-05T16:40:17.923Z",
+      "updated_at": "2026-09-05T18:31:51.833Z",
       "latest_diagnosis": {
         "likely_stage": "webhook_missing",
         "confidence": 0.6,
-        "recommended_action": "reconcile_state",
-        "reasoning": "The refund of ₹1,533 was successfully processed through the bank (CREDIT_CONFIRMED) and recorded in the merchant ledger (REFUNDED), but the initial webhook delivery to the merchant endpoint timed out, delaying notification. A retry eventually succeeded, yet the case remains flagged as in limbo for 11 days.",
+        "recommended_action": "resend_webhook",
+        "reasoning": "The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.",
         "evidence_used": [
-          "payment_gateway: ACKNOWLEDGED — refund_initiated: SUCCESS, gateway_acknowledged: SUCCESS (Gateway verified the refund origin and debit balance; the refund was properly initiated on the payment side.)",
-          "settlement: NPCI_BANK: bank_credit_confirmed: SUCCESS on 2026-08-25T12:38:21.413Z (The acquiring switch confirmed the reversal to the customer's account. The money movement is complete.)",
-          "webhook_dispatcher: webhook_delivery_attempt: FAILED — HTTP POST timed out after 10000ms; merchant_webhook_sync: SUCCESS on 2026-09-05 (The initial webhook delivery failed due to a timeout, but a subsequent retry successfully delivered the signed HMAC webhook event. This ~11-day gap between failure and successful retry aligns with the reported limbo duration.)",
-          "beneficiary_destination: VALID_ACTIVE (The beneficiary destination is valid and active, ruling out issues with the destination account.)",
-          "merchant_ledger: REFUNDED (The merchant's internal accounting ledger reflects the refund as completed.)",
-          "payment_gateway: Cross-System Conflict Detected: NO (No cross-system conflict was detected, suggesting all systems are nominally aligned on the refund status.)"
+          "webhook_dispatcher: webhook_delivery_attempt | FAILED (The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.)",
+          "webhook_dispatcher: merchant_webhook_sync | SUCCESS (The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.)",
+          "payment_gateway: ACKNOWLEDGED (The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.)"
         ],
         "assessment": {
           "primary_hypothesis": {
             "code": "WEBHOOK_DELIVERY_FAILURE",
-            "label": "Initial webhook delivery timeout caused delayed merchant notification, resulting in 11-day limbo state",
+            "label": "Webhook Delivery Failure",
             "confidence": 0.6
           },
-          "summary": "The refund of ₹1,533 was successfully processed through the bank (CREDIT_CONFIRMED) and recorded in the merchant ledger (REFUNDED), but the initial webhook delivery to the merchant endpoint timed out, delaying notification. A retry eventually succeeded, yet the case remains flagged as in limbo for 11 days.",
+          "summary": "The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.",
           "evidence": [
             {
-              "source": "payment_gateway",
-              "observed": "ACKNOWLEDGED — refund_initiated: SUCCESS, gateway_acknowledged: SUCCESS",
-              "interpretation": "Gateway verified the refund origin and debit balance; the refund was properly initiated on the payment side.",
-              "supports": true
-            },
-            {
-              "source": "settlement",
-              "observed": "NPCI_BANK: bank_credit_confirmed: SUCCESS on 2026-08-25T12:38:21.413Z",
-              "interpretation": "The acquiring switch confirmed the reversal to the customer's account. The money movement is complete.",
+              "source": "webhook_dispatcher",
+              "observed": "webhook_delivery_attempt | FAILED",
+              "interpretation": "The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.",
               "supports": true
             },
             {
               "source": "webhook_dispatcher",
-              "observed": "webhook_delivery_attempt: FAILED — HTTP POST timed out after 10000ms; merchant_webhook_sync: SUCCESS on 2026-09-05",
-              "interpretation": "The initial webhook delivery failed due to a timeout, but a subsequent retry successfully delivered the signed HMAC webhook event. This ~11-day gap between failure and successful retry aligns with the reported limbo duration.",
-              "supports": true
-            },
-            {
-              "source": "beneficiary_destination",
-              "observed": "VALID_ACTIVE",
-              "interpretation": "The beneficiary destination is valid and active, ruling out issues with the destination account.",
-              "supports": true
-            },
-            {
-              "source": "merchant_ledger",
-              "observed": "REFUNDED",
-              "interpretation": "The merchant's internal accounting ledger reflects the refund as completed.",
+              "observed": "merchant_webhook_sync | SUCCESS",
+              "interpretation": "The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.",
               "supports": true
             },
             {
               "source": "payment_gateway",
-              "observed": "Cross-System Conflict Detected: NO",
-              "interpretation": "No cross-system conflict was detected, suggesting all systems are nominally aligned on the refund status.",
-              "supports": true
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.",
+              "supports": false
             }
           ],
           "alternative_hypotheses": [
             {
-              "label": "INCOMPLETE_TELEMETRY — Missing visibility into post-retry merchant processing; the webhook may have been delivered but not properly acted upon by the merchant's internal system",
-              "confidence": 0.25
-            },
-            {
-              "label": "LEDGER_DESYNCHRONIZATION — The merchant ledger shows REFUNDED but the merchant's operational system may not have reconciled the state, leaving the case in limbo from the merchant's perspective",
-              "confidence": 0.15
+              "label": "Bank Leg Stalled",
+              "confidence": 0.1
             }
           ],
           "recommended_action": {
-            "action": "reconcile_state",
-            "reason": "The bank confirmed the credit and the ledger shows REFUNDED, but the initial webhook timeout created an 11-day notification gap. Although the retry succeeded, it is unclear whether the merchant's internal systems properly processed the re-sent webhook event. Reconciling state across the gateway, merchant ledger, and webhook dispatcher will confirm whether all layers are truly synchronized or if a residual processing gap remains."
+            "action": "resend_webhook",
+            "reason": "Resending the webhook will ensure that the merchant receives the refund notification and can update their accounting ledger accordingly."
           },
-          "uncertainty": "It cannot be confirmed from the supplied telemetry alone whether the merchant's internal system properly processed the re-sent webhook after the retry. The telemetry shows the webhook was delivered successfully on 2026-09-05, but does not confirm whether the merchant acted on it or whether the customer has been made whole from their perspective. The 11-day limbo status may persist despite successful webhook delivery if the merchant's downstream processing was not triggered."
+          "uncertainty": "The exact reason for the webhook delivery failure is unknown, and it is unclear whether the refund processing was completed successfully."
         },
-        "provider": "opencode",
-        "model": "ling-3.0-flash-fin-free",
-        "raw_response": "```json\n{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Initial webhook delivery timeout caused delayed merchant notification, resulting in 11-day limbo state\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"The refund of ₹1,533 was successfully processed through the bank (CREDIT_CONFIRMED) and recorded in the merchant ledger (REFUNDED), but the initial webhook delivery to the merchant endpoint timed out, delaying notification. A retry eventually succeeded, yet the case remains flagged as in limbo for 11 days.\",\n    \"evidence\": [\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED — refund_initiated: SUCCESS, gateway_acknowledged: SUCCESS\",\n        \"interpretation\": \"Gateway verified the refund origin and debit balance; the refund was properly initiated on the payment side.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"settlement\",\n        \"observed\": \"NPCI_BANK: bank_credit_confirmed: SUCCESS on 2026-08-25T12:38:21.413Z\",\n        \"interpretation\": \"The acquiring switch confirmed the reversal to the customer's account. The money movement is complete.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"webhook_delivery_attempt: FAILED — HTTP POST timed out after 10000ms; merchant_webhook_sync: SUCCESS on 2026-09-05\",\n        \"interpretation\": \"The initial webhook delivery failed due to a timeout, but a subsequent retry successfully delivered the signed HMAC webhook event. This ~11-day gap between failure and successful retry aligns with the reported limbo duration.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"beneficiary_destination\",\n        \"observed\": \"VALID_ACTIVE\",\n        \"interpretation\": \"The beneficiary destination is valid and active, ruling out issues with the destination account.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"merchant_ledger\",\n        \"observed\": \"REFUNDED\",\n        \"interpretation\": \"The merchant's internal accounting ledger reflects the refund as completed.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"Cross-System Conflict Detected: NO\",\n        \"interpretation\": \"No cross-system conflict was detected, suggesting all systems are nominally aligned on the refund status.\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"INCOMPLETE_TELEMETRY — Missing visibility into post-retry merchant processing; the webhook may have been delivered but not properly acted upon by the merchant's internal system\",\n        \"confidence\": 0.25\n      },\n      {\n        \"label\": \"LEDGER_DESYNCHRONIZATION — The merchant ledger shows REFUNDED but the merchant's operational system may not have reconciled the state, leaving the case in limbo from the merchant's perspective\",\n        \"confidence\": 0.15\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"reconcile_state\",\n      \"reason\": \"The bank confirmed the credit and the ledger shows REFUNDED, but the initial webhook timeout created an 11-day notification gap. Although the retry succeeded, it is unclear whether the merchant's internal systems properly processed the re-sent webhook event. Reconciling state across the gateway, merchant ledger, and webhook dispatcher will confirm whether all layers are truly synchronized or if a residual processing gap remains.\"\n    },\n    \"uncertainty\": \"It cannot be confirmed from the supplied telemetry alone whether the merchant's internal system properly processed the re-sent webhook after the retry. The telemetry shows the webhook was delivered successfully on 2026-09-05, but does not confirm whether the merchant acted on it or whether the customer has been made whole from their perspective. The 11-day limbo status may persist despite successful webhook delivery if the merchant's downstream processing was not triggered.\"\n  },\n  \"confidence\": 0.60\n}\n```",
-        "latency_ms": 10246
+        "provider": "nvidia",
+        "model": "meta/llama-3.2-11b-vision-instruct",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Webhook Delivery Failure\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.\",\n    \"evidence\": [\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"webhook_delivery_attempt | FAILED\",\n        \"interpretation\": \"The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"merchant_webhook_sync | SUCCESS\",\n        \"interpretation\": \"The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.\",\n        \"supports\": false\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Leg Stalled\",\n        \"confidence\": 0.10\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"resend_webhook\",\n      \"reason\": \"Resending the webhook will ensure that the merchant receives the refund notification and can update their accounting ledger accordingly.\"\n    },\n    \"uncertainty\": \"The exact reason for the webhook delivery failure is unknown, and it is unclear whether the refund processing was completed successfully.\"\n  },\n  \"confidence\": 0.60\n}",
+        "latency_ms": 9590
       },
       "latest_policy": {
+        "evaluation_id": "eval_b5a53b56-c9b3-4050-9a53-9cc9ca4835dc",
+        "decision": "HALT",
         "allowed": false,
         "action_to_take": "escalate_to_human",
-        "rule_triggered": "RULE_3_MAX_REMEDIATION_LIMIT",
-        "reason": "Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached.",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:31:51.806Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "60.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹1,533",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹1,533 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+            "threshold": "resend_webhook, escalate_to_human",
+            "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": false,
+            "observed": "STALE (webhook already DELIVERED)",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Authorization invalidated: Webhook is already DELIVERED in provider telemetry. Fresh investigation required."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'resend_webhook' requested."
+          }
+        ],
         "checks": {
           "confidence_passed": false,
           "amount_passed": true,
           "remediation_limit_passed": false,
           "allowed_action_passed": true,
-          "evidence_complete_passed": true
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": false,
+          "approved_tool_passed": true
         }
       },
       "latest_action": {
@@ -31287,6 +31469,1108 @@
       "timestamp": "2026-09-05T17:37:01.183Z",
       "previous_hash": "f9afa16ef28ea6b5788902261fb0c203ac4debdc5815dd4a55ffd60fb8ab88ea",
       "event_hash": "935cdae68e3bfbe3ae03f2ef6eb2797a812827634fb7aebe98945ef424e87af6"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0001",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0001 in state 'ESCALATED_LOW_CONFIDENCE' (Liability: ₹1,271, Age: 10d).",
+      "status": "INFO",
+      "id": "audit_1788632880617_386201",
+      "timestamp": "2026-09-05T18:28:00.616Z",
+      "previous_hash": "935cdae68e3bfbe3ae03f2ef6eb2797a812827634fb7aebe98945ef424e87af6",
+      "event_hash": "50c22c69c1e0b00a76d3dac77de0eb14e84061f7ae51a670c3a0b8173422fe92"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0001",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=FAILED_TIMEOUT, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0001",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "FAILED_TIMEOUT",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0001",
+            "timestamp": "2026-08-26T12:37:36.389Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹1,271"
+          },
+          {
+            "id": "evt_gw_CS_345_0001",
+            "timestamp": "2026-08-26T12:37:37.889Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0001",
+            "timestamp": "2026-08-26T12:38:21.389Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Acquiring switch processed reversal to customer account"
+          },
+          {
+            "id": "evt_wh_CS_345_0001",
+            "timestamp": "2026-08-26T12:38:24.389Z",
+            "event_type": "webhook_delivery_attempt",
+            "system": "WEBHOOK_DISPATCHER",
+            "status": "FAILED",
+            "details": "HTTP POST to merchant webhook endpoint timed out after 10000ms"
+          },
+          {
+            "id": "evt_act_esc_1788611890448",
+            "timestamp": "2026-09-05T12:38:10.448Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Model confidence (0%) is below strict safety cutoff (85%). Evidence is ambiguous or contradictory."
+          },
+          {
+            "id": "evt_act_esc_1788611961728",
+            "timestamp": "2026-09-05T12:39:21.728Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Model confidence (0%) is below strict safety cutoff (85%). Evidence is ambiguous or contradictory."
+          },
+          {
+            "id": "evt_act_esc_1788628964130",
+            "timestamp": "2026-09-05T17:22:44.130Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "evt_act_esc_1788632915403",
+            "timestamp": "2026-09-05T18:28:35.403Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          }
+        ],
+        "age_days": 10,
+        "amount": 1271,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788632880641_fed019",
+      "timestamp": "2026-09-05T18:28:00.641Z",
+      "previous_hash": "50c22c69c1e0b00a76d3dac77de0eb14e84061f7ae51a670c3a0b8173422fe92",
+      "event_hash": "db5cd1634acd6296ef1548dc2c323581ed4dcea4f47b6da65bb236078822a963"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0001",
+      "actor": "AGENT_CORE",
+      "stage": "DIAGNOSE",
+      "action": "DIAGNOSE",
+      "provider": "sandbox",
+      "message": "AI Unavailable: Real AI provider not configured or unreachable. Halting autonomous loop safely.",
+      "status": "WARNING",
+      "details": {
+        "likely_stage": "ambiguous",
+        "confidence": 0,
+        "recommended_action": "escalate_to_human",
+        "reasoning": "AI provider unavailable or all providers returned invalid responses. Real AI API key required for autonomous diagnosis. Human review required.",
+        "evidence_used": [],
+        "provider": "AI_UNAVAILABLE",
+        "model": "none",
+        "error": "No active AI provider returned a valid schema-compliant diagnosis.",
+        "latency_ms": 34701
+      },
+      "id": "audit_1788632915366_f1628a",
+      "timestamp": "2026-09-05T18:28:35.366Z",
+      "previous_hash": "db5cd1634acd6296ef1548dc2c323581ed4dcea4f47b6da65bb236078822a963",
+      "event_hash": "8f6527c3a550da7eef356a0d771b96d8fb8943924dc638901cd6f1c62b7e62d9"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0001",
+      "actor": "AGENT_CORE",
+      "stage": "POLICY_GATE",
+      "action": "POLICY_GATE",
+      "provider": "sandbox",
+      "message": "POLICY GATE TRIGGERED [RULE_01_CONFIDENCE]: Autonomous execution blocked. AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "status": "WARNING",
+      "details": {
+        "evaluation_id": "eval_4149d511-1417-4f9c-84e9-6bd1f42acf20",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:28:35.380Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "0.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹1,271",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹1,271 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'escalate_to_human' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "ambiguous -> escalate_to_human",
+            "threshold": "escalate_to_human",
+            "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": true,
+            "observed": "0 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has undergone 0 previous autonomous remediations. Safe to attempt single idempotent execution."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "escalate_to_human",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'escalate_to_human' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": false,
+            "observed": "escalate_to_human",
+            "threshold": "Action != escalate_to_human",
+            "reason": "AI diagnosis or operations policy explicitly recommended human escalation."
+          }
+        ],
+        "checks": {
+          "confidence_passed": false,
+          "amount_passed": true,
+          "remediation_limit_passed": true,
+          "allowed_action_passed": true,
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
+        }
+      },
+      "id": "audit_1788632915414_ed2c0d",
+      "timestamp": "2026-09-05T18:28:35.414Z",
+      "previous_hash": "8f6527c3a550da7eef356a0d771b96d8fb8943924dc638901cd6f1c62b7e62d9",
+      "event_hash": "a6c733226f40287820ef178a0676ca6f019b9b42ae4f27961ef265c21aa002bc"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0001",
+      "actor": "AGENT_CORE",
+      "stage": "OUTCOME",
+      "action": "OUTCOME",
+      "provider": "sandbox",
+      "message": "Closed loop with Human Escalation [Status: ESCALATED_LOW_CONFIDENCE]. Zero financial exposure incurred.",
+      "status": "INFO",
+      "id": "audit_1788632915426_0e164d",
+      "timestamp": "2026-09-05T18:28:35.426Z",
+      "previous_hash": "a6c733226f40287820ef178a0676ca6f019b9b42ae4f27961ef265c21aa002bc",
+      "event_hash": "c5e20ebbf173f56b2e74b818a95f47bb1104a54ee0e5e8c69ee7c152d04bdef6"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0002 in state 'RESOLVED' (Liability: ₹6,266, Age: 4d).",
+      "status": "INFO",
+      "id": "audit_1788632962561_9bef90",
+      "timestamp": "2026-09-05T18:29:22.561Z",
+      "previous_hash": "c5e20ebbf173f56b2e74b818a95f47bb1104a54ee0e5e8c69ee7c152d04bdef6",
+      "event_hash": "79c73feb15ee98ef40e1c9d001e66fd2bc0ce81e38377ea659cc90df635417b1"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0002",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=DELIVERED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0002",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "DELIVERED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0002",
+            "timestamp": "2026-09-01T12:37:36.412Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹6,266"
+          },
+          {
+            "id": "evt_gw_CS_345_0002",
+            "timestamp": "2026-09-01T12:37:37.912Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0002",
+            "timestamp": "2026-09-01T12:38:36.412Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Bank settlement cleared successfully"
+          },
+          {
+            "id": "evt_ledger_CS_345_0002",
+            "timestamp": "2026-09-01T12:38:38.412Z",
+            "event_type": "ledger_reconciliation_flag",
+            "system": "MERCHANT_LEDGER",
+            "status": "PENDING",
+            "details": "Internal settlement balance not debited due to race condition in accounting worker"
+          },
+          {
+            "id": "evt_act_rec_1788612032371",
+            "timestamp": "2026-09-05T12:40:32.371Z",
+            "system": "MERCHANT_LEDGER",
+            "event_type": "ledger_reconciliation_sync",
+            "status": "SUCCESS",
+            "details": "Merchant accounting ledger synchronized with gateway settlement batch."
+          }
+        ],
+        "age_days": 4,
+        "amount": 6266,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788632962585_0053c0",
+      "timestamp": "2026-09-05T18:29:22.585Z",
+      "previous_hash": "79c73feb15ee98ef40e1c9d001e66fd2bc0ce81e38377ea659cc90df635417b1",
+      "event_hash": "a64f396f55c94aa0788197f2cdaa299b527bc77fba30bfefa8d4b8fb82ce9141"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0003",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0003 in state 'ESCALATED_LOW_CONFIDENCE' (Liability: ₹1,267, Age: 4d).",
+      "status": "INFO",
+      "id": "audit_1788633028719_c4a068",
+      "timestamp": "2026-09-05T18:30:28.719Z",
+      "previous_hash": "a64f396f55c94aa0788197f2cdaa299b527bc77fba30bfefa8d4b8fb82ce9141",
+      "event_hash": "7930fb339bde49f1623e8928cce91488841b46293b5009e353af91872b93c986"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0003",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=PENDING_SWITCH, Webhook=NOT_DISPATCHED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0003",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "PENDING_SWITCH",
+        "webhook_status": "NOT_DISPATCHED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0003",
+            "timestamp": "2026-09-01T12:37:36.413Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹1,267"
+          },
+          {
+            "id": "evt_gw_CS_345_0003",
+            "timestamp": "2026-09-01T12:37:37.913Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_stuck_CS_345_0003",
+            "timestamp": "2026-09-01T12:38:06.413Z",
+            "event_type": "bank_switch_dispatched",
+            "system": "NPCI_BANK",
+            "status": "PENDING",
+            "details": "NPCI switch acknowledged dispatch but no final RRN confirmation callback returned"
+          },
+          {
+            "id": "evt_act_esc_1788623676853",
+            "timestamp": "2026-09-05T15:54:36.853Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Model confidence (70%) is below strict safety cutoff (85%). Evidence is ambiguous or contradictory."
+          },
+          {
+            "id": "evt_act_esc_1788633048457",
+            "timestamp": "2026-09-05T18:30:48.457Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          }
+        ],
+        "age_days": 4,
+        "amount": 1267,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788633028744_2ffa89",
+      "timestamp": "2026-09-05T18:30:28.744Z",
+      "previous_hash": "7930fb339bde49f1623e8928cce91488841b46293b5009e353af91872b93c986",
+      "event_hash": "87ac6d1e5b56ce4fe7a627026d595db70cbab2a91073f78dd4fc2c2e6cb0bb3c"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0003",
+      "actor": "AGENT_CORE",
+      "stage": "DIAGNOSE",
+      "action": "DIAGNOSE",
+      "provider": "sandbox",
+      "message": "AI Diagnosis [nvidia / meta/llama-3.2-11b-vision-instruct]: Stage='WEBHOOK_MISSING' | Confidence=60% | Recommended='resend_webhook'. Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.",
+      "status": "WARNING",
+      "details": {
+        "likely_stage": "webhook_missing",
+        "confidence": 0.6,
+        "recommended_action": "resend_webhook",
+        "reasoning": "Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.",
+        "evidence_used": [
+          "webhook_dispatcher: NOT_DISPATCHED (Webhook delivery confirmation is missing, indicating a failure in the delivery process.)",
+          "payment_gateway: ACKNOWLEDGED (Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.)",
+          "NPCI_BANK: PENDING_SWITCH (NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.)"
+        ],
+        "assessment": {
+          "primary_hypothesis": {
+            "code": "WEBHOOK_DELIVERY_FAILURE",
+            "label": "Webhook delivery failure prevented refund processing",
+            "confidence": 0.6
+          },
+          "summary": "Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.",
+          "evidence": [
+            {
+              "source": "webhook_dispatcher",
+              "observed": "NOT_DISPATCHED",
+              "interpretation": "Webhook delivery confirmation is missing, indicating a failure in the delivery process.",
+              "supports": true
+            },
+            {
+              "source": "payment_gateway",
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.",
+              "supports": false
+            },
+            {
+              "source": "NPCI_BANK",
+              "observed": "PENDING_SWITCH",
+              "interpretation": "NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.",
+              "supports": true
+            }
+          ],
+          "alternative_hypotheses": [
+            {
+              "label": "Bank Leg Stalled",
+              "confidence": 0.2
+            }
+          ],
+          "recommended_action": {
+            "action": "resend_webhook",
+            "reason": "Resending the webhook will ensure its successful delivery and allow for refund processing to continue."
+          },
+          "uncertainty": "The exact cause of the webhook delivery failure cannot be determined without further investigation, but resending the webhook is a safe and reasonable next step."
+        },
+        "provider": "nvidia",
+        "model": "meta/llama-3.2-11b-vision-instruct",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Webhook delivery failure prevented refund processing\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"Refund processing stalled due to missing webhook delivery confirmation, despite gateway acknowledgement and NPCI switch dispatch.\",\n    \"evidence\": [\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"NOT_DISPATCHED\",\n        \"interpretation\": \"Webhook delivery confirmation is missing, indicating a failure in the delivery process.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"Gateway acknowledged the refund initiation, but this does not guarantee successful delivery of the webhook.\",\n        \"supports\": false\n      },\n      {\n        \"source\": \"NPCI_BANK\",\n        \"observed\": \"PENDING_SWITCH\",\n        \"interpretation\": \"NPCI switch acknowledged dispatch, but no final RRN confirmation callback returned, indicating potential issues with webhook delivery.\",\n        \"supports\": true\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Leg Stalled\",\n        \"confidence\": 0.20\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"resend_webhook\",\n      \"reason\": \"Resending the webhook will ensure its successful delivery and allow for refund processing to continue.\"\n    },\n    \"uncertainty\": \"The exact cause of the webhook delivery failure cannot be determined without further investigation, but resending the webhook is a safe and reasonable next step.\"\n  },\n  \"confidence\": 0.60\n}",
+        "latency_ms": 7250
+      },
+      "id": "audit_1788633048417_637983",
+      "timestamp": "2026-09-05T18:30:48.417Z",
+      "previous_hash": "87ac6d1e5b56ce4fe7a627026d595db70cbab2a91073f78dd4fc2c2e6cb0bb3c",
+      "event_hash": "066e7879d734f3a37d5393081846e019901c1a03b82eca7cedb476cd1c3639ed"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0003",
+      "actor": "AGENT_CORE",
+      "stage": "POLICY_GATE",
+      "action": "POLICY_GATE",
+      "provider": "sandbox",
+      "message": "POLICY GATE TRIGGERED [RULE_01_CONFIDENCE]: Autonomous execution blocked. AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "status": "WARNING",
+      "details": {
+        "evaluation_id": "eval_17ec989f-07e3-4e26-b743-5ddb4430d646",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:30:48.431Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "60.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹1,267",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹1,267 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+            "threshold": "resend_webhook, escalate_to_human",
+            "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": true,
+            "observed": "0 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has undergone 0 previous autonomous remediations. Safe to attempt single idempotent execution."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": true,
+            "observed": "FRESH",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Provider telemetry is complete and matches live evidence state."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'resend_webhook' requested."
+          }
+        ],
+        "checks": {
+          "confidence_passed": false,
+          "amount_passed": true,
+          "remediation_limit_passed": true,
+          "allowed_action_passed": true,
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": true,
+          "approved_tool_passed": true
+        }
+      },
+      "id": "audit_1788633048470_080806",
+      "timestamp": "2026-09-05T18:30:48.470Z",
+      "previous_hash": "066e7879d734f3a37d5393081846e019901c1a03b82eca7cedb476cd1c3639ed",
+      "event_hash": "3c57fb7782ce210e1970e3d89ee7088a63238b7210b10811e354c02d1cc24c93"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0003",
+      "actor": "AGENT_CORE",
+      "stage": "OUTCOME",
+      "action": "OUTCOME",
+      "provider": "sandbox",
+      "message": "Closed loop with Human Escalation [Status: ESCALATED_LOW_CONFIDENCE]. Zero financial exposure incurred.",
+      "status": "INFO",
+      "id": "audit_1788633048483_62545f",
+      "timestamp": "2026-09-05T18:30:48.483Z",
+      "previous_hash": "3c57fb7782ce210e1970e3d89ee7088a63238b7210b10811e354c02d1cc24c93",
+      "event_hash": "17566a6569c78c75730bf425e0a8490da5279294e9494dab1dc607bb45f675df"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0006 in state 'ESCALATED_MAX_REMEDIATIONS' (Liability: ₹1,533, Age: 11d).",
+      "status": "INFO",
+      "id": "audit_1788633053474_d96787",
+      "timestamp": "2026-09-05T18:30:53.474Z",
+      "previous_hash": "17566a6569c78c75730bf425e0a8490da5279294e9494dab1dc607bb45f675df",
+      "event_hash": "bf83eb6fe7f439e09681ca8f51e6568dfc6e6dd22d72a546c936be3dce5fa876"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=DELIVERED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0006",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "DELIVERED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0006",
+            "timestamp": "2026-08-25T12:37:36.413Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹1,533"
+          },
+          {
+            "id": "evt_gw_CS_345_0006",
+            "timestamp": "2026-08-25T12:37:37.913Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0006",
+            "timestamp": "2026-08-25T12:38:21.413Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Acquiring switch processed reversal to customer account"
+          },
+          {
+            "id": "evt_wh_CS_345_0006",
+            "timestamp": "2026-08-25T12:38:24.413Z",
+            "event_type": "webhook_delivery_attempt",
+            "system": "WEBHOOK_DISPATCHER",
+            "status": "FAILED",
+            "details": "HTTP POST to merchant webhook endpoint timed out after 10000ms"
+          },
+          {
+            "id": "evt_act_wh_1788625198334",
+            "timestamp": "2026-09-05T16:19:58.334Z",
+            "system": "WEBHOOK_DISPATCHER",
+            "event_type": "merchant_webhook_sync",
+            "status": "SUCCESS",
+            "details": "Merchant Webhook Dispatcher: Re-sent signed HMAC webhook event to configured merchant endpoint."
+          },
+          {
+            "id": "evt_act_esc_1788626417923",
+            "timestamp": "2026-09-05T16:40:17.923Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          }
+        ],
+        "age_days": 11,
+        "amount": 1533,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788633053501_d8c955",
+      "timestamp": "2026-09-05T18:30:53.501Z",
+      "previous_hash": "bf83eb6fe7f439e09681ca8f51e6568dfc6e6dd22d72a546c936be3dce5fa876",
+      "event_hash": "55b04aff2c533f35ade19462ab983217a3fca716e161a28949d9ac21e6ad7549"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0006 in state 'INVESTIGATING' (Liability: ₹1,533, Age: 11d).",
+      "status": "INFO",
+      "id": "audit_1788633101196_4dff16",
+      "timestamp": "2026-09-05T18:31:41.196Z",
+      "previous_hash": "55b04aff2c533f35ade19462ab983217a3fca716e161a28949d9ac21e6ad7549",
+      "event_hash": "9b2cf60f0aca277ce033e4564c0f58d17e4b04c1cc5208705be80d3e7ff3624b"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=DELIVERED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0006",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "DELIVERED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0006",
+            "timestamp": "2026-08-25T12:37:36.413Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹1,533"
+          },
+          {
+            "id": "evt_gw_CS_345_0006",
+            "timestamp": "2026-08-25T12:37:37.913Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0006",
+            "timestamp": "2026-08-25T12:38:21.413Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Acquiring switch processed reversal to customer account"
+          },
+          {
+            "id": "evt_wh_CS_345_0006",
+            "timestamp": "2026-08-25T12:38:24.413Z",
+            "event_type": "webhook_delivery_attempt",
+            "system": "WEBHOOK_DISPATCHER",
+            "status": "FAILED",
+            "details": "HTTP POST to merchant webhook endpoint timed out after 10000ms"
+          },
+          {
+            "id": "evt_act_wh_1788625198334",
+            "timestamp": "2026-09-05T16:19:58.334Z",
+            "system": "WEBHOOK_DISPATCHER",
+            "event_type": "merchant_webhook_sync",
+            "status": "SUCCESS",
+            "details": "Merchant Webhook Dispatcher: Re-sent signed HMAC webhook event to configured merchant endpoint."
+          },
+          {
+            "id": "evt_act_esc_1788626417923",
+            "timestamp": "2026-09-05T16:40:17.923Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          },
+          {
+            "id": "evt_act_esc_1788633111832",
+            "timestamp": "2026-09-05T18:31:51.833Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          }
+        ],
+        "age_days": 11,
+        "amount": 1533,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788633101224_b71eb5",
+      "timestamp": "2026-09-05T18:31:41.223Z",
+      "previous_hash": "9b2cf60f0aca277ce033e4564c0f58d17e4b04c1cc5208705be80d3e7ff3624b",
+      "event_hash": "eb001e83560dcb9a459921c4e8c6b4d72941f10960fd2b3ba68baf02962dcf10"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "DIAGNOSE",
+      "action": "DIAGNOSE",
+      "provider": "sandbox",
+      "message": "AI Diagnosis [nvidia / meta/llama-3.2-11b-vision-instruct]: Stage='WEBHOOK_MISSING' | Confidence=60% | Recommended='resend_webhook'. The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.",
+      "status": "WARNING",
+      "details": {
+        "likely_stage": "webhook_missing",
+        "confidence": 0.6,
+        "recommended_action": "resend_webhook",
+        "reasoning": "The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.",
+        "evidence_used": [
+          "webhook_dispatcher: webhook_delivery_attempt | FAILED (The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.)",
+          "webhook_dispatcher: merchant_webhook_sync | SUCCESS (The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.)",
+          "payment_gateway: ACKNOWLEDGED (The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.)"
+        ],
+        "assessment": {
+          "primary_hypothesis": {
+            "code": "WEBHOOK_DELIVERY_FAILURE",
+            "label": "Webhook Delivery Failure",
+            "confidence": 0.6
+          },
+          "summary": "The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.",
+          "evidence": [
+            {
+              "source": "webhook_dispatcher",
+              "observed": "webhook_delivery_attempt | FAILED",
+              "interpretation": "The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.",
+              "supports": true
+            },
+            {
+              "source": "webhook_dispatcher",
+              "observed": "merchant_webhook_sync | SUCCESS",
+              "interpretation": "The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.",
+              "supports": true
+            },
+            {
+              "source": "payment_gateway",
+              "observed": "ACKNOWLEDGED",
+              "interpretation": "The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.",
+              "supports": false
+            }
+          ],
+          "alternative_hypotheses": [
+            {
+              "label": "Bank Leg Stalled",
+              "confidence": 0.1
+            }
+          ],
+          "recommended_action": {
+            "action": "resend_webhook",
+            "reason": "Resending the webhook will ensure that the merchant receives the refund notification and can update their accounting ledger accordingly."
+          },
+          "uncertainty": "The exact reason for the webhook delivery failure is unknown, and it is unclear whether the refund processing was completed successfully."
+        },
+        "provider": "nvidia",
+        "model": "meta/llama-3.2-11b-vision-instruct",
+        "raw_response": "{\n  \"assessment\": {\n    \"primary_hypothesis\": {\n      \"code\": \"WEBHOOK_DELIVERY_FAILURE\",\n      \"label\": \"Webhook Delivery Failure\",\n      \"confidence\": 0.60\n    },\n    \"summary\": \"The refund transaction has failed due to a webhook delivery failure, despite the merchant accounting ledger indicating a successful refund.\",\n    \"evidence\": [\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"webhook_delivery_attempt | FAILED\",\n        \"interpretation\": \"The webhook delivery attempt to the merchant endpoint timed out after 10000ms, indicating a failure in delivering the webhook.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"webhook_dispatcher\",\n        \"observed\": \"merchant_webhook_sync | SUCCESS\",\n        \"interpretation\": \"The merchant Webhook Dispatcher successfully re-sent the signed HMAC webhook event to the configured merchant endpoint, but the initial delivery attempt failed.\",\n        \"supports\": true\n      },\n      {\n        \"source\": \"payment_gateway\",\n        \"observed\": \"ACKNOWLEDGED\",\n        \"interpretation\": \"The payment gateway acknowledged the refund initiation, but the subsequent webhook delivery failure indicates that the refund processing may not have completed successfully.\",\n        \"supports\": false\n      }\n    ],\n    \"alternative_hypotheses\": [\n      {\n        \"label\": \"Bank Leg Stalled\",\n        \"confidence\": 0.10\n      }\n    ],\n    \"recommended_action\": {\n      \"action\": \"resend_webhook\",\n      \"reason\": \"Resending the webhook will ensure that the merchant receives the refund notification and can update their accounting ledger accordingly.\"\n    },\n    \"uncertainty\": \"The exact reason for the webhook delivery failure is unknown, and it is unclear whether the refund processing was completed successfully.\"\n  },\n  \"confidence\": 0.60\n}",
+        "latency_ms": 9590
+      },
+      "id": "audit_1788633111791_529968",
+      "timestamp": "2026-09-05T18:31:51.791Z",
+      "previous_hash": "eb001e83560dcb9a459921c4e8c6b4d72941f10960fd2b3ba68baf02962dcf10",
+      "event_hash": "ded8cc1004a3607fddd9c65f0aff46ed2eb9d125e6f93c6562b50a57f803963b"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "POLICY_GATE",
+      "action": "POLICY_GATE",
+      "provider": "sandbox",
+      "message": "POLICY GATE TRIGGERED [RULE_01_CONFIDENCE]: Autonomous execution blocked. AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "status": "WARNING",
+      "details": {
+        "evaluation_id": "eval_b5a53b56-c9b3-4050-9a53-9cc9ca4835dc",
+        "decision": "HALT",
+        "allowed": false,
+        "action_to_take": "escalate_to_human",
+        "rule_triggered": "RULE_01_CONFIDENCE",
+        "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+        "evaluated_at": "2026-09-05T18:31:51.806Z",
+        "rules": [
+          {
+            "id": "RULE_01_CONFIDENCE",
+            "name": "AI Confidence Threshold",
+            "passed": false,
+            "observed": "60.0%",
+            "threshold": "≥ 85%",
+            "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+          },
+          {
+            "id": "RULE_02_HIGH_VALUE",
+            "name": "High Value Liability Ceiling",
+            "passed": true,
+            "observed": "₹1,533",
+            "threshold": "≤ ₹50,000",
+            "reason": "Refund liability ₹1,533 is within autonomous ceiling (≤ ₹50,000)."
+          },
+          {
+            "id": "RULE_03_ACTION_ALLOWLIST",
+            "name": "Server Action Allowlist",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+            "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+          },
+          {
+            "id": "RULE_04_ACTION_COMPATIBILITY",
+            "name": "Diagnosis / Action Compatibility",
+            "passed": true,
+            "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+            "threshold": "resend_webhook, escalate_to_human",
+            "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+          },
+          {
+            "id": "RULE_05_CASE_STATE",
+            "name": "Case State Eligibility",
+            "passed": true,
+            "observed": "INVESTIGATING",
+            "threshold": "LIMBO, INVESTIGATING",
+            "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+          },
+          {
+            "id": "RULE_06_IDEMPOTENCY",
+            "name": "Idempotency & Remediation Limit",
+            "passed": false,
+            "observed": "1 attempts",
+            "threshold": "< 1 attempt(s)",
+            "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+          },
+          {
+            "id": "RULE_07_WORKSPACE_ISOLATION",
+            "name": "Workspace Multi-Tenant Isolation",
+            "passed": true,
+            "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+            "threshold": "Strict Match: ws_razorpay_demo",
+            "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+          },
+          {
+            "id": "RULE_08_PROVIDER_STATE",
+            "name": "Provider Telemetry Freshness",
+            "passed": false,
+            "observed": "STALE (webhook already DELIVERED)",
+            "threshold": "Complete & Non-Stale Telemetry",
+            "reason": "Authorization invalidated: Webhook is already DELIVERED in provider telemetry. Fresh investigation required."
+          },
+          {
+            "id": "RULE_09_APPROVED_TOOL",
+            "name": "Approved Execution Tooling",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Server-controlled handler implementation",
+            "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+          },
+          {
+            "id": "RULE_10_ESCALATION_CHECK",
+            "name": "Autonomous Action vs Escalation",
+            "passed": true,
+            "observed": "resend_webhook",
+            "threshold": "Action != escalate_to_human",
+            "reason": "Autonomous remediation action 'resend_webhook' requested."
+          }
+        ],
+        "checks": {
+          "confidence_passed": false,
+          "amount_passed": true,
+          "remediation_limit_passed": false,
+          "allowed_action_passed": true,
+          "evidence_complete_passed": true,
+          "action_compatibility_passed": true,
+          "case_state_passed": true,
+          "workspace_isolation_passed": true,
+          "provider_state_passed": false,
+          "approved_tool_passed": true
+        }
+      },
+      "id": "audit_1788633111848_9eecc8",
+      "timestamp": "2026-09-05T18:31:51.848Z",
+      "previous_hash": "ded8cc1004a3607fddd9c65f0aff46ed2eb9d125e6f93c6562b50a57f803963b",
+      "event_hash": "2577422787ae55a3574cd85d2a2cf4a851b223ac9d84cc0180f3ae18eddf3cc4"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0006",
+      "actor": "AGENT_CORE",
+      "stage": "OUTCOME",
+      "action": "OUTCOME",
+      "provider": "sandbox",
+      "message": "Closed loop with Human Escalation [Status: ESCALATED_LOW_CONFIDENCE]. Zero financial exposure incurred.",
+      "status": "INFO",
+      "id": "audit_1788633111861_c975cc",
+      "timestamp": "2026-09-05T18:31:51.860Z",
+      "previous_hash": "2577422787ae55a3574cd85d2a2cf4a851b223ac9d84cc0180f3ae18eddf3cc4",
+      "event_hash": "52a71b624f6a7ad1c4c976a14b771f0c20cbe720c996d7b7da85e695d16f152e"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0004",
+      "actor": "AGENT_CORE",
+      "stage": "DETECT",
+      "action": "DETECT",
+      "provider": "sandbox",
+      "message": "Detected stuck refund CS_345_0004 in state 'ESCALATED_MAX_REMEDIATIONS' (Liability: ₹4,697, Age: 3d).",
+      "status": "INFO",
+      "id": "audit_1788633117360_378dec",
+      "timestamp": "2026-09-05T18:31:57.360Z",
+      "previous_hash": "52a71b624f6a7ad1c4c976a14b771f0c20cbe720c996d7b7da85e695d16f152e",
+      "event_hash": "53083416022e6815a5da00464bd8a22acdf56d3a3265dba7b88fd6bcf4368cd1"
+    },
+    {
+      "workspace_id": "ws_razorpay_demo",
+      "case_id": "CS_345_0004",
+      "actor": "AGENT_CORE",
+      "stage": "INVESTIGATE",
+      "action": "INVESTIGATE",
+      "provider": "sandbox",
+      "message": "Correlated 5 payment subsystems: Gateway=ACKNOWLEDGED, Settlement Leg=CREDIT_CONFIRMED, Webhook=DELIVERED, Destination=VALID_ACTIVE, Ledger=REFUNDED. Conflicting Signals=NO",
+      "status": "INFO",
+      "details": {
+        "case_id": "CS_345_0004",
+        "gateway_status": "ACKNOWLEDGED",
+        "bank_status": "CREDIT_CONFIRMED",
+        "webhook_status": "DELIVERED",
+        "destination_status": "VALID_ACTIVE",
+        "ledger_status": "REFUNDED",
+        "event_trail": [
+          {
+            "id": "evt_init_CS_345_0004",
+            "timestamp": "2026-09-02T12:37:36.413Z",
+            "event_type": "refund_initiated",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Merchant initiated refund for ₹4,697"
+          },
+          {
+            "id": "evt_gw_CS_345_0004",
+            "timestamp": "2026-09-02T12:37:37.913Z",
+            "event_type": "gateway_acknowledged",
+            "system": "GATEWAY",
+            "status": "SUCCESS",
+            "details": "Gateway verified transaction origin and debit balance"
+          },
+          {
+            "id": "evt_bank_CS_345_0004",
+            "timestamp": "2026-09-02T12:38:21.413Z",
+            "event_type": "bank_credit_confirmed",
+            "system": "NPCI_BANK",
+            "status": "SUCCESS",
+            "details": "Acquiring switch processed reversal to customer account"
+          },
+          {
+            "id": "evt_wh_CS_345_0004",
+            "timestamp": "2026-09-02T12:38:24.413Z",
+            "event_type": "webhook_delivery_attempt",
+            "system": "WEBHOOK_DISPATCHER",
+            "status": "FAILED",
+            "details": "HTTP POST to merchant webhook endpoint timed out after 10000ms"
+          },
+          {
+            "id": "evt_act_wh_1788623686597",
+            "timestamp": "2026-09-05T15:54:46.597Z",
+            "system": "WEBHOOK_DISPATCHER",
+            "event_type": "merchant_webhook_sync",
+            "status": "SUCCESS",
+            "details": "Merchant Webhook Dispatcher: Re-sent signed HMAC webhook event to configured merchant endpoint."
+          },
+          {
+            "id": "evt_act_esc_1788625181963",
+            "timestamp": "2026-09-05T16:19:41.963Z",
+            "system": "GATEWAY",
+            "event_type": "escalated_to_human_ops",
+            "status": "PENDING",
+            "details": "Escalated to Human Ops Review Queue. Reason: Case has already undergone 1 remediation attempt(s). Autonomous retry limit reached."
+          }
+        ],
+        "age_days": 3,
+        "amount": 4697,
+        "currency": "INR",
+        "has_conflicting_signals": false
+      },
+      "id": "audit_1788633117392_475c48",
+      "timestamp": "2026-09-05T18:31:57.392Z",
+      "previous_hash": "53083416022e6815a5da00464bd8a22acdf56d3a3265dba7b88fd6bcf4368cd1",
+      "event_hash": "d0bed53569d133dd4c79983854c0a1bd238511227945350106d39eff249d0bb4"
     }
   ],
   "sandbox_configs": {
@@ -35705,6 +36989,288 @@
         }
       ],
       "evaluated_at": "2026-09-05T17:37:01.126Z"
+    },
+    "eval_4149d511-1417-4f9c-84e9-6bd1f42acf20": {
+      "evaluation_id": "eval_4149d511-1417-4f9c-84e9-6bd1f42acf20",
+      "case_id": "CS_345_0001",
+      "workspace_id": "ws_razorpay_demo",
+      "confidence": 0,
+      "amount": 1271,
+      "requested_action": "escalate_to_human",
+      "decision": "HALT",
+      "rule_triggered": "RULE_01_CONFIDENCE",
+      "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "rules": [
+        {
+          "id": "RULE_01_CONFIDENCE",
+          "name": "AI Confidence Threshold",
+          "passed": false,
+          "observed": "0.0%",
+          "threshold": "≥ 85%",
+          "reason": "AI confidence (0.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+        },
+        {
+          "id": "RULE_02_HIGH_VALUE",
+          "name": "High Value Liability Ceiling",
+          "passed": true,
+          "observed": "₹1,271",
+          "threshold": "≤ ₹50,000",
+          "reason": "Refund liability ₹1,271 is within autonomous ceiling (≤ ₹50,000)."
+        },
+        {
+          "id": "RULE_03_ACTION_ALLOWLIST",
+          "name": "Server Action Allowlist",
+          "passed": true,
+          "observed": "escalate_to_human",
+          "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+          "reason": "Action 'escalate_to_human' is registered in server-side allowlist."
+        },
+        {
+          "id": "RULE_04_ACTION_COMPATIBILITY",
+          "name": "Diagnosis / Action Compatibility",
+          "passed": true,
+          "observed": "ambiguous -> escalate_to_human",
+          "threshold": "escalate_to_human",
+          "reason": "Remediation action 'escalate_to_human' is logically compatible with verified failure stage 'ambiguous'."
+        },
+        {
+          "id": "RULE_05_CASE_STATE",
+          "name": "Case State Eligibility",
+          "passed": true,
+          "observed": "INVESTIGATING",
+          "threshold": "LIMBO, INVESTIGATING",
+          "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+        },
+        {
+          "id": "RULE_06_IDEMPOTENCY",
+          "name": "Idempotency & Remediation Limit",
+          "passed": true,
+          "observed": "0 attempts",
+          "threshold": "< 1 attempt(s)",
+          "reason": "Case has undergone 0 previous autonomous remediations. Safe to attempt single idempotent execution."
+        },
+        {
+          "id": "RULE_07_WORKSPACE_ISOLATION",
+          "name": "Workspace Multi-Tenant Isolation",
+          "passed": true,
+          "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+          "threshold": "Strict Match: ws_razorpay_demo",
+          "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+        },
+        {
+          "id": "RULE_08_PROVIDER_STATE",
+          "name": "Provider Telemetry Freshness",
+          "passed": true,
+          "observed": "FRESH",
+          "threshold": "Complete & Non-Stale Telemetry",
+          "reason": "Provider telemetry is complete and matches live evidence state."
+        },
+        {
+          "id": "RULE_09_APPROVED_TOOL",
+          "name": "Approved Execution Tooling",
+          "passed": true,
+          "observed": "escalate_to_human",
+          "threshold": "Server-controlled handler implementation",
+          "reason": "Tool 'escalate_to_human' maps to a verified server-controlled adapter method."
+        },
+        {
+          "id": "RULE_10_ESCALATION_CHECK",
+          "name": "Autonomous Action vs Escalation",
+          "passed": false,
+          "observed": "escalate_to_human",
+          "threshold": "Action != escalate_to_human",
+          "reason": "AI diagnosis or operations policy explicitly recommended human escalation."
+        }
+      ],
+      "evaluated_at": "2026-09-05T18:28:35.380Z"
+    },
+    "eval_17ec989f-07e3-4e26-b743-5ddb4430d646": {
+      "evaluation_id": "eval_17ec989f-07e3-4e26-b743-5ddb4430d646",
+      "case_id": "CS_345_0003",
+      "workspace_id": "ws_razorpay_demo",
+      "confidence": 0.6,
+      "amount": 1267,
+      "requested_action": "resend_webhook",
+      "decision": "HALT",
+      "rule_triggered": "RULE_01_CONFIDENCE",
+      "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "rules": [
+        {
+          "id": "RULE_01_CONFIDENCE",
+          "name": "AI Confidence Threshold",
+          "passed": false,
+          "observed": "60.0%",
+          "threshold": "≥ 85%",
+          "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+        },
+        {
+          "id": "RULE_02_HIGH_VALUE",
+          "name": "High Value Liability Ceiling",
+          "passed": true,
+          "observed": "₹1,267",
+          "threshold": "≤ ₹50,000",
+          "reason": "Refund liability ₹1,267 is within autonomous ceiling (≤ ₹50,000)."
+        },
+        {
+          "id": "RULE_03_ACTION_ALLOWLIST",
+          "name": "Server Action Allowlist",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+          "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+        },
+        {
+          "id": "RULE_04_ACTION_COMPATIBILITY",
+          "name": "Diagnosis / Action Compatibility",
+          "passed": true,
+          "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+          "threshold": "resend_webhook, escalate_to_human",
+          "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+        },
+        {
+          "id": "RULE_05_CASE_STATE",
+          "name": "Case State Eligibility",
+          "passed": true,
+          "observed": "INVESTIGATING",
+          "threshold": "LIMBO, INVESTIGATING",
+          "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+        },
+        {
+          "id": "RULE_06_IDEMPOTENCY",
+          "name": "Idempotency & Remediation Limit",
+          "passed": true,
+          "observed": "0 attempts",
+          "threshold": "< 1 attempt(s)",
+          "reason": "Case has undergone 0 previous autonomous remediations. Safe to attempt single idempotent execution."
+        },
+        {
+          "id": "RULE_07_WORKSPACE_ISOLATION",
+          "name": "Workspace Multi-Tenant Isolation",
+          "passed": true,
+          "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+          "threshold": "Strict Match: ws_razorpay_demo",
+          "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+        },
+        {
+          "id": "RULE_08_PROVIDER_STATE",
+          "name": "Provider Telemetry Freshness",
+          "passed": true,
+          "observed": "FRESH",
+          "threshold": "Complete & Non-Stale Telemetry",
+          "reason": "Provider telemetry is complete and matches live evidence state."
+        },
+        {
+          "id": "RULE_09_APPROVED_TOOL",
+          "name": "Approved Execution Tooling",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "Server-controlled handler implementation",
+          "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+        },
+        {
+          "id": "RULE_10_ESCALATION_CHECK",
+          "name": "Autonomous Action vs Escalation",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "Action != escalate_to_human",
+          "reason": "Autonomous remediation action 'resend_webhook' requested."
+        }
+      ],
+      "evaluated_at": "2026-09-05T18:30:48.431Z"
+    },
+    "eval_b5a53b56-c9b3-4050-9a53-9cc9ca4835dc": {
+      "evaluation_id": "eval_b5a53b56-c9b3-4050-9a53-9cc9ca4835dc",
+      "case_id": "CS_345_0006",
+      "workspace_id": "ws_razorpay_demo",
+      "confidence": 0.6,
+      "amount": 1533,
+      "requested_action": "resend_webhook",
+      "decision": "HALT",
+      "rule_triggered": "RULE_01_CONFIDENCE",
+      "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review.",
+      "rules": [
+        {
+          "id": "RULE_01_CONFIDENCE",
+          "name": "AI Confidence Threshold",
+          "passed": false,
+          "observed": "60.0%",
+          "threshold": "≥ 85%",
+          "reason": "AI confidence (60.0%) is below required safety threshold (85%). Probabilistic uncertainty requires human review."
+        },
+        {
+          "id": "RULE_02_HIGH_VALUE",
+          "name": "High Value Liability Ceiling",
+          "passed": true,
+          "observed": "₹1,533",
+          "threshold": "≤ ₹50,000",
+          "reason": "Refund liability ₹1,533 is within autonomous ceiling (≤ ₹50,000)."
+        },
+        {
+          "id": "RULE_03_ACTION_ALLOWLIST",
+          "name": "Server Action Allowlist",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "resend_webhook, refresh_status, reconcile_state, verify_refund, escalate_to_human",
+          "reason": "Action 'resend_webhook' is registered in server-side allowlist."
+        },
+        {
+          "id": "RULE_04_ACTION_COMPATIBILITY",
+          "name": "Diagnosis / Action Compatibility",
+          "passed": true,
+          "observed": "WEBHOOK_DELIVERY_FAILURE -> resend_webhook",
+          "threshold": "resend_webhook, escalate_to_human",
+          "reason": "Remediation action 'resend_webhook' is logically compatible with verified failure stage 'WEBHOOK_DELIVERY_FAILURE'."
+        },
+        {
+          "id": "RULE_05_CASE_STATE",
+          "name": "Case State Eligibility",
+          "passed": true,
+          "observed": "INVESTIGATING",
+          "threshold": "LIMBO, INVESTIGATING",
+          "reason": "Case status 'INVESTIGATING' is in eligible processing state."
+        },
+        {
+          "id": "RULE_06_IDEMPOTENCY",
+          "name": "Idempotency & Remediation Limit",
+          "passed": false,
+          "observed": "1 attempts",
+          "threshold": "< 1 attempt(s)",
+          "reason": "Case has already undergone 1 remediation attempt(s). Further execution blocked to prevent infinite loops."
+        },
+        {
+          "id": "RULE_07_WORKSPACE_ISOLATION",
+          "name": "Workspace Multi-Tenant Isolation",
+          "passed": true,
+          "observed": "Case: ws_razorpay_demo vs Session: ws_razorpay_demo",
+          "threshold": "Strict Match: ws_razorpay_demo",
+          "reason": "Case workspace strictly matches authenticated session workspace 'ws_razorpay_demo'."
+        },
+        {
+          "id": "RULE_08_PROVIDER_STATE",
+          "name": "Provider Telemetry Freshness",
+          "passed": false,
+          "observed": "STALE (webhook already DELIVERED)",
+          "threshold": "Complete & Non-Stale Telemetry",
+          "reason": "Authorization invalidated: Webhook is already DELIVERED in provider telemetry. Fresh investigation required."
+        },
+        {
+          "id": "RULE_09_APPROVED_TOOL",
+          "name": "Approved Execution Tooling",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "Server-controlled handler implementation",
+          "reason": "Tool 'resend_webhook' maps to a verified server-controlled adapter method."
+        },
+        {
+          "id": "RULE_10_ESCALATION_CHECK",
+          "name": "Autonomous Action vs Escalation",
+          "passed": true,
+          "observed": "resend_webhook",
+          "threshold": "Action != escalate_to_human",
+          "reason": "Autonomous remediation action 'resend_webhook' requested."
+        }
+      ],
+      "evaluated_at": "2026-09-05T18:31:51.806Z"
     }
   }
 }
