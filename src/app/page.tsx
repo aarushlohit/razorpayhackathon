@@ -29,9 +29,7 @@ export default function LandingPage() {
             <Link href="#pricing" className="hover:text-[#000000] transition">
               Pricing
             </Link>
-            <Link href="/app/audit" className="hover:text-[#000000] transition">
-              Docs
-            </Link>
+
           </nav>
 
           <div className="flex items-center gap-5">
@@ -124,7 +122,6 @@ export default function LandingPage() {
               {/* Razorpay */}
               <div className="flex items-center gap-2.5 font-medium px-2">
                 <img src="/assets/razorpay.png" alt="Razorpay Logo" className="h-6 w-auto object-contain" />
-                <span className="font-semibold text-[17px] text-[#000000] tracking-tight">Razorpay</span>
               </div>
 
               <span className="hidden sm:inline-block text-[#E5E5E7] font-light text-lg">|</span>
