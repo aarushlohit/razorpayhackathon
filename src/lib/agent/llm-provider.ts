@@ -201,8 +201,9 @@ export async function diagnoseRefundCase(
 function validateAction(action: string): AllowedAction {
   const allowed: AllowedAction[] = [
     "resend_webhook",
-    "retrigger_bank_leg",
-    "correct_destination",
+    "reconcile_state",
+    "refresh_status",
+    "verify_refund",
     "escalate_to_human",
   ];
   if (allowed.includes(action as AllowedAction)) {
@@ -231,7 +232,7 @@ export function evaluateDeterministicDiagnosis(
     return {
       likely_stage: "bank_leg_stuck",
       confidence: 0.89,
-      recommended_action: "retrigger_bank_leg",
+      recommended_action: "refresh_status",
       reasoning: "Gateway acknowledged reversal and destination is active, but acquiring bank switch has no terminal settlement ACK for 72+ hours.",
       provider: "deterministic_heuristic",
     };
@@ -251,7 +252,7 @@ export function evaluateDeterministicDiagnosis(
       return {
         likely_stage: "bank_leg_stuck",
         confidence: 0.92,
-        recommended_action: "retrigger_bank_leg",
+        recommended_action: "refresh_status",
         reasoning: "NPCI switch acknowledged dispatch, but no final RRN confirmation callback was returned after multiple retry windows.",
         provider: "deterministic_heuristic",
       };
@@ -260,8 +261,8 @@ export function evaluateDeterministicDiagnosis(
       return {
         likely_stage: "invalid_destination",
         confidence: 0.94,
-        recommended_action: "correct_destination",
-        reasoning: `Beneficiary validator returned failure status (${evidence.destination_status}). Customer account/VPA requires routing to verified fallback.`,
+        recommended_action: "escalate_to_human",
+        reasoning: `Beneficiary validator returned failure status (${evidence.destination_status}). Requires human ops manual verification.`,
         provider: "deterministic_heuristic",
       };
 
@@ -269,8 +270,8 @@ export function evaluateDeterministicDiagnosis(
       return {
         likely_stage: "ledger_mismatch",
         confidence: 0.88,
-        recommended_action: "escalate_to_human",
-        reasoning: "Bank credit confirmed but internal accounting ledger shows reconciliation pending. Requires manual finance authorization.",
+        recommended_action: "reconcile_state",
+        reasoning: "Bank credit confirmed but internal accounting ledger shows reconciliation pending. Triggering ledger sync.",
         provider: "deterministic_heuristic",
       };
 

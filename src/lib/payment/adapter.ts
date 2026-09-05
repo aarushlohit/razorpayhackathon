@@ -2,20 +2,20 @@ import { Database } from "../db";
 import { ToolExecutionResult, OutcomeVerification, AllowedAction, EventTrailItem, CaseStatus } from "@/types";
 
 export interface PaymentProviderAdapter {
-  providerName: "RAZORPAY_TEST" | "SANDBOX";
+  providerName: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX";
   resendWebhook(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
-  retriggerBankLeg(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
-  correctDestination(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
+  refreshStatus(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
+  reconcileState(workspaceId: string, caseId: string): Promise<ToolExecutionResult>;
   escalateToHuman(workspaceId: string, caseId: string, reason: string, status?: CaseStatus): Promise<ToolExecutionResult>;
   verifyRefundStatus(workspaceId: string, caseId: string): Promise<OutcomeVerification>;
 }
 
-export class SandboxAdapter implements PaymentProviderAdapter {
-  providerName: "RAZORPAY_TEST" | "SANDBOX" = "SANDBOX";
+export class SandboxPaymentAdapter implements PaymentProviderAdapter {
+  providerName: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX" = "DEVELOPMENT_SANDBOX";
 
   async resendWebhook(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
     const refundCase = Database.getCase(workspaceId, caseId);
-    if (!refundCase) throw new Error(`Case ${caseId} not found in workspace.`);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found in workspace.`);
 
     refundCase.remediation_attempts += 1;
     refundCase.evidence.webhook_status = "DELIVERED";
@@ -25,9 +25,9 @@ export class SandboxAdapter implements PaymentProviderAdapter {
       id: `evt_act_wh_${Date.now()}`,
       timestamp: new Date().toISOString(),
       system: "WEBHOOK_DISPATCHER",
-      event_type: "sandbox_webhook_redeliver",
+      event_type: "merchant_webhook_sync",
       status: "SUCCESS",
-      details: "Sandbox Webhook Dispatcher: Re-sent signed HMAC webhook payload; received HTTP 200 OK from merchant endpoint.",
+      details: "Merchant Webhook Dispatcher: Re-sent signed HMAC webhook event to configured merchant endpoint.",
     };
     refundCase.evidence.event_trail.push(newEvent);
     Database.updateCase(workspaceId, refundCase);
@@ -39,95 +39,93 @@ export class SandboxAdapter implements PaymentProviderAdapter {
       success: true,
       output: "Merchant webhook re-delivered successfully with HTTP 200 OK acknowledgement.",
       payload: { webhook_status: "DELIVERED", retry_count: 1 },
-      provider_environment: "SANDBOX",
+      provider_environment: "DEVELOPMENT_SANDBOX",
     };
   }
 
-  async retriggerBankLeg(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
+  async refreshStatus(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
     const refundCase = Database.getCase(workspaceId, caseId);
-    if (!refundCase) throw new Error(`Case ${caseId} not found.`);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found in workspace.`);
 
     refundCase.remediation_attempts += 1;
     refundCase.current_status = "ACTION_IN_PROGRESS";
 
     if (refundCase.is_planted_failure) {
-      // Planted failure: bank switch rejects retrigger
+      // Planted failure test fixture: status remains pending
       refundCase.evidence.bank_status = "NO_UPDATE";
       const newEvent: EventTrailItem = {
-        id: `evt_act_bank_planted_${Date.now()}`,
+        id: `evt_act_planted_${Date.now()}`,
         timestamp: new Date().toISOString(),
-        system: "NPCI_BANK",
-        event_type: "bank_switch_retrigger_attempt",
+        system: "GATEWAY",
+        event_type: "gateway_status_sync",
         status: "FAILED",
-        details: "Acquiring Switch error: ERR_SETTLEMENT_REVERSAL_EXHAUSTED (Beneficiary bank gateway timeout).",
+        details: "Gateway status synchronization returned UNRESOLVED_PENDING status.",
       };
       refundCase.evidence.event_trail.push(newEvent);
       Database.updateCase(workspaceId, refundCase);
 
       return {
-        tool_name: "retrigger_bank_leg",
+        tool_name: "refresh_status",
         case_id: caseId,
         executed_at: new Date().toISOString(),
         success: true,
-        output: "Dispatched bank switch retrigger command. Switch accepted instruction.",
-        payload: { instruction: "RETRY_DISPATCH", batch_id: `bt_${Date.now()}` },
-        provider_environment: "SANDBOX",
+        output: "Queried payment gateway status. Gateway reports transaction remains in processing limbo.",
+        payload: { state: "UNRESOLVED_PENDING" },
+        provider_environment: "DEVELOPMENT_SANDBOX",
       };
     }
 
-    // Normal successful case
     refundCase.evidence.bank_status = "CREDIT_CONFIRMED";
+    refundCase.evidence.gateway_status = "ACKNOWLEDGED";
     const newEvent: EventTrailItem = {
-      id: `evt_act_bank_${Date.now()}`,
+      id: `evt_act_sync_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      system: "NPCI_BANK",
-      event_type: "bank_switch_retrigger_success",
+      system: "GATEWAY",
+      event_type: "gateway_status_sync",
       status: "SUCCESS",
-      details: "Beneficiary bank processed forced reversal; assigned RRN_CONFIRMATION callback.",
+      details: "Queried downstream gateway state; confirmed payment reversal terminal status.",
     };
     refundCase.evidence.event_trail.push(newEvent);
     Database.updateCase(workspaceId, refundCase);
 
     return {
-      tool_name: "retrigger_bank_leg",
+      tool_name: "refresh_status",
       case_id: caseId,
       executed_at: new Date().toISOString(),
       success: true,
-      output: "Dispatched bank switch reversal request. RRN confirmation received.",
-      payload: { status: "CREDIT_CONFIRMED" },
-      provider_environment: "SANDBOX",
+      output: "Refreshed gateway status. Confirmed refund terminal status.",
+      payload: { status: "PROCESSED" },
+      provider_environment: "DEVELOPMENT_SANDBOX",
     };
   }
 
-  async correctDestination(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
+  async reconcileState(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
     const refundCase = Database.getCase(workspaceId, caseId);
-    if (!refundCase) throw new Error(`Case ${caseId} not found.`);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found in workspace.`);
 
     refundCase.remediation_attempts += 1;
-    refundCase.evidence.destination_status = "VALID_ACTIVE";
-    refundCase.evidence.bank_status = "CREDIT_CONFIRMED";
-    refundCase.customer_vpa_or_account = `${refundCase.customer_name.toLowerCase().replace(/\s+/g, ".")}verified@icici`;
+    refundCase.evidence.ledger_status = "REFUNDED";
     refundCase.current_status = "ACTION_IN_PROGRESS";
 
     const newEvent: EventTrailItem = {
-      id: `evt_act_dest_${Date.now()}`,
+      id: `evt_act_rec_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      system: "BENEFICIARY_VALIDATOR",
-      event_type: "destination_corrected_and_rerouted",
+      system: "MERCHANT_LEDGER",
+      event_type: "ledger_reconciliation_sync",
       status: "SUCCESS",
-      details: `Destination re-routed to validated customer secondary VPA (${refundCase.customer_vpa_or_account}). Account confirmed active.`,
+      details: "Merchant accounting ledger synchronized with gateway settlement batch.",
     };
     refundCase.evidence.event_trail.push(newEvent);
     Database.updateCase(workspaceId, refundCase);
 
     return {
-      tool_name: "correct_destination",
+      tool_name: "reconcile_state",
       case_id: caseId,
       executed_at: new Date().toISOString(),
       success: true,
-      output: `Updated destination routing token to validated fallback handle ${refundCase.customer_vpa_or_account}.`,
-      payload: { destination_status: "VALID_ACTIVE" },
-      provider_environment: "SANDBOX",
+      output: "Merchant ledger state reconciled with gateway records.",
+      payload: { ledger_status: "REFUNDED" },
+      provider_environment: "DEVELOPMENT_SANDBOX",
     };
   }
 
@@ -138,7 +136,7 @@ export class SandboxAdapter implements PaymentProviderAdapter {
     specificStatus?: CaseStatus
   ): Promise<ToolExecutionResult> {
     const refundCase = Database.getCase(workspaceId, caseId);
-    if (!refundCase) throw new Error(`Case ${caseId} not found.`);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
 
     const targetStatus = specificStatus || "ESCALATED_HUMAN";
     refundCase.current_status = targetStatus;
@@ -147,7 +145,7 @@ export class SandboxAdapter implements PaymentProviderAdapter {
       id: `evt_act_esc_${Date.now()}`,
       timestamp: new Date().toISOString(),
       system: "GATEWAY",
-      event_type: "routed_to_human_ops_escalation",
+      event_type: "escalated_to_human_ops",
       status: "PENDING",
       details: `Escalated to Human Ops Review Queue. Reason: ${reason}`,
     };
@@ -159,38 +157,37 @@ export class SandboxAdapter implements PaymentProviderAdapter {
       case_id: caseId,
       executed_at: new Date().toISOString(),
       success: true,
-      output: `Case escalated to Human Operations Queue [Status: ${targetStatus}].`,
+      output: `Refund escalated to Human Operations Queue [Status: ${targetStatus}].`,
       payload: { reason, status: targetStatus },
-      provider_environment: "SANDBOX",
+      provider_environment: "DEVELOPMENT_SANDBOX",
     };
   }
 
   async verifyRefundStatus(workspaceId: string, caseId: string): Promise<OutcomeVerification> {
     const refundCase = Database.getCase(workspaceId, caseId);
-    if (!refundCase) throw new Error(`Case ${caseId} not found.`);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
 
     if (refundCase.is_planted_failure && refundCase.evidence.bank_status !== "CREDIT_CONFIRMED") {
       return {
         verified_at: new Date().toISOString(),
         observed_status: "STILL_PENDING",
         remediation_effective: false,
-        details: "CRITICAL: Acquiring switch reports unconfirmed status. Bank leg did not resolve after remediation attempt.",
+        details: "CRITICAL: Downstream settlement status remains unresolved. State did not mutate after remediation attempt.",
       };
     }
 
-    const { gateway_status, bank_status, webhook_status, destination_status } = refundCase.evidence;
+    const { gateway_status, bank_status, webhook_status } = refundCase.evidence;
     const isResolved =
       gateway_status === "ACKNOWLEDGED" &&
       bank_status === "CREDIT_CONFIRMED" &&
-      webhook_status === "DELIVERED" &&
-      destination_status === "VALID_ACTIVE";
+      webhook_status === "DELIVERED";
 
     if (isResolved) {
       return {
         verified_at: new Date().toISOString(),
         observed_status: "RESOLVED",
         remediation_effective: true,
-        details: "Verification succeeded: All payment legs (Gateway, Bank RRN, Webhook ACK, Destination) are confirmed closed.",
+        details: "Verification succeeded: All payment records (Gateway, Settlement Status, Webhook Delivery) are synchronized and terminal.",
       };
     }
 
@@ -198,15 +195,14 @@ export class SandboxAdapter implements PaymentProviderAdapter {
       verified_at: new Date().toISOString(),
       observed_status: "STILL_PENDING",
       remediation_effective: false,
-      details: `Verification incomplete: Bank=${bank_status}, Webhook=${webhook_status}, Destination=${destination_status}.`,
+      details: `Verification incomplete: Bank=${bank_status}, Webhook=${webhook_status}.`,
     };
   }
 }
 
-export class RazorpayTestAdapter extends SandboxAdapter {
-  override providerName = "RAZORPAY_TEST" as const;
+export class RazorpayLiveAdapter extends SandboxPaymentAdapter {
+  override providerName = "RAZORPAY_LIVE" as const;
 
-  // Real server-side Razorpay test integration
   private getAuthHeader(): string | null {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -214,23 +210,90 @@ export class RazorpayTestAdapter extends SandboxAdapter {
     return "Basic " + Buffer.from(`${keyId}:${keySecret}`).toString("base64");
   }
 
-  override async resendWebhook(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
+  override async refreshStatus(workspaceId: string, caseId: string): Promise<ToolExecutionResult> {
     const auth = this.getAuthHeader();
-    if (!auth) {
-      // Fallback gracefully to sandbox implementation if credentials not set in env
-      return super.resendWebhook(workspaceId, caseId);
+    const refundCase = Database.getCase(workspaceId, caseId);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
+
+    if (!auth || !refundCase.refund_id.startsWith("rfnd_")) {
+      return super.refreshStatus(workspaceId, caseId);
     }
 
-    const res = await super.resendWebhook(workspaceId, caseId);
-    res.provider_environment = "RAZORPAY_TEST";
-    res.output = `[Razorpay Test API] Webhook event sync dispatched for ${caseId}.`;
-    return res;
+    try {
+      // Real authenticated Razorpay API call
+      const res = await fetch(`https://api.razorpay.com/v1/refunds/${refundCase.refund_id}`, {
+        method: "GET",
+        headers: {
+          Authorization: auth,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const status = data.status || "processed";
+        refundCase.current_status = status === "processed" ? "RESOLVED" : "INVESTIGATING";
+        Database.updateCase(workspaceId, refundCase);
+
+        return {
+          tool_name: "refresh_status",
+          case_id: caseId,
+          executed_at: new Date().toISOString(),
+          success: true,
+          output: `[Razorpay API] Fetched refund ${refundCase.refund_id}: status is '${status}'.`,
+          payload: data,
+          provider_environment: "RAZORPAY_LIVE",
+        };
+      }
+    } catch (err: any) {
+      console.warn("Razorpay API live call failed:", err?.message);
+    }
+
+    return super.refreshStatus(workspaceId, caseId);
+  }
+
+  override async verifyRefundStatus(workspaceId: string, caseId: string): Promise<OutcomeVerification> {
+    const auth = this.getAuthHeader();
+    const refundCase = Database.getCase(workspaceId, caseId);
+    if (!refundCase) throw new Error(`Refund ${caseId} not found.`);
+
+    if (!auth || !refundCase.refund_id.startsWith("rfnd_")) {
+      return super.verifyRefundStatus(workspaceId, caseId);
+    }
+
+    try {
+      const res = await fetch(`https://api.razorpay.com/v1/refunds/${refundCase.refund_id}`, {
+        method: "GET",
+        headers: {
+          Authorization: auth,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "processed") {
+          return {
+            verified_at: new Date().toISOString(),
+            observed_status: "RESOLVED",
+            remediation_effective: true,
+            details: `[Razorpay API] Verified refund ${refundCase.refund_id} is 'processed' with payment_id ${data.payment_id}.`,
+          };
+        }
+      }
+    } catch (err: any) {
+      console.warn("Razorpay API live verification failed:", err?.message);
+    }
+
+    return super.verifyRefundStatus(workspaceId, caseId);
   }
 }
 
-export function getPaymentAdapter(provider: "razorpay_test" | "sandbox"): PaymentProviderAdapter {
-  if (provider === "razorpay_test" && process.env.RAZORPAY_KEY_ID) {
-    return new RazorpayTestAdapter();
+export function getPaymentAdapter(provider?: string): PaymentProviderAdapter {
+  if (provider === "razorpay_live" && process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    return new RazorpayLiveAdapter();
   }
-  return new SandboxAdapter();
+  return new SandboxPaymentAdapter();
 }

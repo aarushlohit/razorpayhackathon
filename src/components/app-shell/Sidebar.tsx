@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ workspace, user }) => {
                 {workspace?.name || "Enterprise Workspace"}
               </div>
               <div className="text-[10px] text-slate-400 font-mono capitalize">
-                {workspace?.provider === "razorpay_test" ? "Razorpay Test Mode" : "Developer Sandbox"}
+                {workspace?.provider === "razorpay_live" ? "Razorpay API Mode" : "Developer Sandbox"}
               </div>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />

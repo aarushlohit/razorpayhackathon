@@ -37,7 +37,7 @@ export const MockTools = {
     };
   },
 
-  retrigger_bank_leg(caseId: string): ToolExecutionResult {
+  refresh_status(caseId: string): ToolExecutionResult {
     const refundCase = RefundStore.getCase(caseId);
     if (!refundCase) throw new Error(`Case ${caseId} not found.`);
 
@@ -45,80 +45,77 @@ export const MockTools = {
     refundCase.current_status = "ACTION_IN_PROGRESS";
 
     if (refundCase.is_planted_failure) {
-      // Planted failure: bank switch rejects retrigger or keeps in NO_UPDATE!
       refundCase.evidence.bank_status = "NO_UPDATE";
       const newEvent: EventTrailItem = {
-        id: `evt_act_bank_planted_${Date.now()}`,
+        id: `evt_act_planted_${Date.now()}`,
         timestamp: new Date().toISOString(),
-        system: "NPCI_BANK",
-        event_type: "bank_switch_retrigger_attempt",
+        system: "GATEWAY",
+        event_type: "gateway_status_sync",
         status: "FAILED",
-        details: "Acquiring switch returned error: ERR_SETTLEMENT_REVERSAL_EXHAUSTED (Beneficiary bank gateway timeout).",
+        details: "Gateway status synchronization returned UNRESOLVED_PENDING status.",
       };
       refundCase.evidence.event_trail.push(newEvent);
       RefundStore.updateCase(refundCase);
 
       return {
-        tool_name: "retrigger_bank_leg",
+        tool_name: "refresh_status",
         case_id: caseId,
         executed_at: new Date().toISOString(),
-        success: true, // tool executed, but outcome verification will catch the failure!
-        output: "Dispatched bank switch retrigger command. Switch accepted instruction.",
-        payload: { instruction: "RETRY_DISPATCH", batch_id: `bt_${Date.now()}` },
+        success: true,
+        output: "Queried payment gateway status. Gateway reports transaction remains in processing limbo.",
+        payload: { state: "UNRESOLVED_PENDING" },
       };
     }
 
-    // Normal successful case
     refundCase.evidence.bank_status = "CREDIT_CONFIRMED";
+    refundCase.evidence.gateway_status = "ACKNOWLEDGED";
     const newEvent: EventTrailItem = {
-      id: `evt_act_bank_${Date.now()}`,
+      id: `evt_act_sync_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      system: "NPCI_BANK",
-      event_type: "bank_switch_retrigger_success",
+      system: "GATEWAY",
+      event_type: "gateway_status_sync",
       status: "SUCCESS",
-      details: "Beneficiary bank processed forced reversal; assigned RRN_CONFIRMATION callback.",
+      details: "Queried downstream gateway state; confirmed payment reversal terminal status.",
     };
     refundCase.evidence.event_trail.push(newEvent);
     RefundStore.updateCase(refundCase);
 
     return {
-      tool_name: "retrigger_bank_leg",
+      tool_name: "refresh_status",
       case_id: caseId,
       executed_at: new Date().toISOString(),
       success: true,
-      output: "Dispatched bank switch reversal request. RRN confirmation received.",
-      payload: { status: "CREDIT_CONFIRMED" },
+      output: "Refreshed gateway status. Confirmed refund terminal status.",
+      payload: { status: "PROCESSED" },
     };
   },
 
-  correct_destination(caseId: string): ToolExecutionResult {
+  reconcile_state(caseId: string): ToolExecutionResult {
     const refundCase = RefundStore.getCase(caseId);
     if (!refundCase) throw new Error(`Case ${caseId} not found.`);
 
     refundCase.remediation_attempts += 1;
-    refundCase.evidence.destination_status = "VALID_ACTIVE";
-    refundCase.evidence.bank_status = "CREDIT_CONFIRMED";
-    refundCase.customer_vpa_or_account = `${refundCase.customer_name.toLowerCase().replace(/\s+/g, ".")}verified@icici`;
+    refundCase.evidence.ledger_status = "REFUNDED";
     refundCase.current_status = "ACTION_IN_PROGRESS";
 
     const newEvent: EventTrailItem = {
-      id: `evt_act_dest_${Date.now()}`,
+      id: `evt_act_rec_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      system: "BENEFICIARY_VALIDATOR",
-      event_type: "destination_corrected_and_re-routed",
+      system: "MERCHANT_LEDGER",
+      event_type: "ledger_reconciliation_sync",
       status: "SUCCESS",
-      details: `Destination re-routed to validated customer secondary VPA (${refundCase.customer_vpa_or_account}). Account confirmed active.`,
+      details: "Merchant accounting ledger synchronized with gateway settlement batch.",
     };
     refundCase.evidence.event_trail.push(newEvent);
     RefundStore.updateCase(refundCase);
 
     return {
-      tool_name: "correct_destination",
+      tool_name: "reconcile_state",
       case_id: caseId,
       executed_at: new Date().toISOString(),
       success: true,
-      output: `Updated destination routing token to validated fallback handle ${refundCase.customer_vpa_or_account}.`,
-      payload: { destination_status: "VALID_ACTIVE" },
+      output: "Merchant ledger state reconciled with gateway records.",
+      payload: { ledger_status: "REFUNDED" },
     };
   },
 
@@ -154,31 +151,28 @@ export const MockTools = {
     const refundCase = RefundStore.getCase(caseId);
     if (!refundCase) throw new Error(`Case ${caseId} not found.`);
 
-    // Check actual state in synthetic DB:
-    // If it's a planted failure case: bank_status remains NO_UPDATE!
     if (refundCase.is_planted_failure && refundCase.evidence.bank_status !== "CREDIT_CONFIRMED") {
       return {
         verified_at: new Date().toISOString(),
         observed_status: "STILL_PENDING",
         remediation_effective: false,
-        details: "CRITICAL: Acquiring switch still reports unconfirmed status. Bank leg did not resolve after remediation attempt.",
+        details: "CRITICAL: Downstream settlement status remains unresolved. State did not mutate after remediation attempt.",
       };
     }
 
-    const { gateway_status, bank_status, webhook_status, destination_status } = refundCase.evidence;
+    const { gateway_status, bank_status, webhook_status } = refundCase.evidence;
 
     const isResolved =
       gateway_status === "ACKNOWLEDGED" &&
       bank_status === "CREDIT_CONFIRMED" &&
-      webhook_status === "DELIVERED" &&
-      destination_status === "VALID_ACTIVE";
+      webhook_status === "DELIVERED";
 
     if (isResolved) {
       return {
         verified_at: new Date().toISOString(),
         observed_status: "RESOLVED",
         remediation_effective: true,
-        details: "Verification succeeded: All payment legs (Gateway, Bank RRN, Webhook ACK, Destination) are fully closed.",
+        details: "Verification succeeded: All payment records (Gateway, Settlement Status, Webhook Delivery) are synchronized and terminal.",
       };
     }
 
@@ -186,7 +180,7 @@ export const MockTools = {
       verified_at: new Date().toISOString(),
       observed_status: "STILL_PENDING",
       remediation_effective: false,
-      details: `Verification incomplete: Bank=${bank_status}, Webhook=${webhook_status}, Destination=${destination_status}.`,
+      details: `Verification incomplete: Bank=${bank_status}, Webhook=${webhook_status}.`,
     };
   },
 };

@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       confidence_threshold: 0.85,
       high_value_limit: 50000,
       max_attempts: 1,
-      allowed_actions: ["resend_webhook", "retrigger_bank_leg", "correct_destination"],
+      allowed_actions: ["resend_webhook", "reconcile_state", "refresh_status", "verify_refund"],
     });
 
     const session = Database.createSession(user.id, defaultWs.id);

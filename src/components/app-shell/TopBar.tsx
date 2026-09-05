@@ -49,10 +49,10 @@ export const TopBar: React.FC<TopBarProps> = ({ workspace }) => {
 
       {/* Right Badges & Controls */}
       <div className="flex items-center gap-3 text-xs">
-        {workspace?.provider === "razorpay_test" ? (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-            RAZORPAY TEST MODE
+        {workspace?.provider === "razorpay_live" ? (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/10 text-white border border-white/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            RAZORPAY LIVE API
           </span>
         ) : (
           <Link

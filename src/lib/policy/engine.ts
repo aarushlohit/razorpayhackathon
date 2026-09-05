@@ -2,8 +2,9 @@ import type { DiagnosisResult, PolicyDecision, RefundCase, SimulatorConfig, Allo
 
 const VALID_ALLOWED_ACTIONS: AllowedAction[] = [
   "resend_webhook",
-  "retrigger_bank_leg",
-  "correct_destination",
+  "reconcile_state",
+  "refresh_status",
+  "verify_refund",
   "escalate_to_human",
 ];
 
@@ -13,7 +14,7 @@ export function evaluatePolicy(
   config: SimulatorConfig
 ): PolicyDecision {
   const confidenceThreshold = config.confidence_threshold ?? 0.85;
-  const highValueThreshold = config.high_value_threshold ?? 50000;
+  const highValueThreshold = config.high_value_limit ?? 50000;
 
   const checks = {
     confidence_passed: diagnosis.confidence >= confidenceThreshold,
@@ -28,7 +29,7 @@ export function evaluatePolicy(
     ),
   };
 
-  // Rule 10 & 8: Incomplete evidence or invalid diagnostic output
+  // Rule 10: Incomplete evidence
   if (!checks.evidence_complete_passed) {
     return {
       allowed: false,
@@ -45,12 +46,12 @@ export function evaluatePolicy(
       allowed: false,
       action_to_take: "escalate_to_human",
       rule_triggered: "RULE_9_UNSUPPORTED_ACTION",
-      reason: `Action '${diagnosis.recommended_action}' is not in the authorized remediation whitelist.`,
+      reason: `Action '${diagnosis.recommended_action}' is not in the authorized remediation allowlist.`,
       checks,
     };
   }
 
-  // Rule 3 & 7: Maximum one automatic remediation attempt per case (no infinite retry loop)
+  // Rule 3: Maximum one automatic remediation attempt per case (no infinite retry loops)
   if (!checks.remediation_limit_passed) {
     return {
       allowed: false,
@@ -67,7 +68,7 @@ export function evaluatePolicy(
       allowed: false,
       action_to_take: "escalate_to_human",
       rule_triggered: "RULE_2_HIGH_VALUE_THRESHOLD",
-      reason: `Refund amount ₹${refundCase.amount.toLocaleString("en-IN")} exceeds autonomous limit of ₹${highValueThreshold.toLocaleString("en-IN")}. Mandatory human authorization.`,
+      reason: `Refund amount ₹${refundCase.amount.toLocaleString("en-IN")} exceeds autonomous limit of ₹${highValueThreshold.toLocaleString("en-IN")}. Mandatory human authorization required.`,
       checks,
     };
   }
@@ -99,7 +100,7 @@ export function evaluatePolicy(
     allowed: true,
     action_to_take: diagnosis.recommended_action,
     rule_triggered: "POLICY_CHECKS_PASSED",
-    reason: `All 10 deterministic policy rules passed. Confidence ${(diagnosis.confidence * 100).toFixed(0)}% >= ${(confidenceThreshold * 100).toFixed(0)}%, Amount ₹${refundCase.amount.toLocaleString("en-IN")} <= ₹${highValueThreshold.toLocaleString("en-IN")}.`,
+    reason: `All deterministic policy rules passed. Confidence ${(diagnosis.confidence * 100).toFixed(0)}% >= ${(confidenceThreshold * 100).toFixed(0)}%, Amount ₹${refundCase.amount.toLocaleString("en-IN")} <= ₹${highValueThreshold.toLocaleString("en-IN")}.`,
     checks,
   };
 }

@@ -1,18 +1,16 @@
 import React from "react";
-import { Sidebar } from "@/components/app-shell/Sidebar";
-import { TopBar } from "@/components/app-shell/TopBar";
+import { Sidebar } from "@/components/app-shell/AppHeader";
 import { requireAuth } from "@/lib/auth";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, workspace } = await requireAuth();
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 flex overflow-hidden">
+    <div className="min-h-screen bg-[#FFFFFF] text-[#1D1D1F] flex selection:bg-[#000000] selection:text-white">
       <Sidebar workspace={workspace} user={user} />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <TopBar workspace={workspace} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
+      <div className="flex-1 flex flex-col min-w-0 bg-[#FFFFFF]">
+        <main className="flex-1 max-w-6xl w-full mx-auto px-8 py-8">
+          {children}
         </main>
       </div>
     </div>

@@ -1,22 +1,22 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
-import { Download, Search, Terminal, Filter, RefreshCw } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { AuditLogEntry } from "@/types";
+import { ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-export default function AuditLogPage() {
+export default function AuditLedgerPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-  const [filterStage, setFilterStage] = useState<string>("ALL");
-  const [search, setSearch] = useState("");
+  const [integrity, setIntegrity] = useState<{ valid: boolean; count: number; error?: string } | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchLogs = async () => {
+  const fetchAuditLogs = async () => {
     try {
       const res = await fetch("/api/audit");
       const data = await res.json();
       if (data.success) {
-        setLogs(data.data);
+        setLogs(data.data.logs || []);
+        setIntegrity(data.data.integrity || null);
       }
     } finally {
       setLoading(false);
@@ -24,121 +24,122 @@ export default function AuditLogPage() {
   };
 
   useEffect(() => {
-    fetchLogs();
+    fetchAuditLogs();
   }, []);
 
-  const filteredLogs = useMemo(() => {
-    return logs.filter((l) => {
-      if (filterStage !== "ALL" && l.stage !== filterStage) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        return (
-          l.case_id.toLowerCase().includes(q) ||
-          l.message.toLowerCase().includes(q) ||
-          (l.action || "").toLowerCase().includes(q)
-        );
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "VERIFY_INTEGRITY" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIntegrity({
+          valid: data.data.status === "AUDIT_INTEGRITY_VALID",
+          count: data.data.count,
+          error: data.data.error,
+        });
       }
-      return true;
-    });
-  }, [logs, filterStage, search]);
-
-  const exportJSON = () => {
-    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `refund_loop_audit_ledger_${Date.now()}.json`;
-    a.click();
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 max-w-6xl">
+      {/* Header & Verification Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E5E7]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Immutable Audit Ledger</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Cryptographically timestamped record of every investigation, policy check, mock/test action, and verification.
+          <h1 className="text-3xl font-bold tracking-tight text-[#000000]">Audit Ledger</h1>
+          <p className="text-[14px] text-[#6E6E73] mt-1">
+            Append-only cryptographic SHA-256 hash chain recording every autonomous event, decision, and verification.
           </p>
         </div>
 
-        <button
-          onClick={exportJSON}
-          className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition self-start sm:self-auto"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Audit Ledger</span>
-        </button>
-      </div>
-
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-950/40 text-xs">
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {["ALL", "DETECT", "INVESTIGATE", "DIAGNOSE", "POLICY_GATE", "ACT", "VERIFY", "OUTCOME"].map(
-              (st) => (
-                <button
-                  key={st}
-                  onClick={() => setFilterStage(st)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition ${
-                    filterStage === st
-                      ? "bg-blue-600 text-white font-bold"
-                      : "bg-slate-800 text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {st}
-                </button>
-              )
-            )}
-          </div>
-
-          <input
-            type="text"
-            placeholder="Search audit trail..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-3 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64 font-mono"
-          />
-        </div>
-
-        <div className="p-4 space-y-2.5 font-mono text-xs max-h-[600px] overflow-y-auto">
-          {filteredLogs.map((l) => (
-            <div
-              key={l.id}
-              className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition flex flex-col gap-1 text-slate-300"
-            >
-              <div className="flex items-center justify-between text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500">{new Date(l.timestamp).toISOString()}</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-800 text-slate-200">
-                    {l.stage}
-                  </span>
-                  {l.case_id !== "SYSTEM" && (
-                    <Link href={`/app/recovery/${l.case_id}`} className="text-blue-400 hover:underline font-bold">
-                      {l.case_id}
-                    </Link>
-                  )}
-                  <span className="text-slate-500 text-[10px]">Actor: {l.actor}</span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold ${
-                    l.status === "SUCCESS"
-                      ? "text-emerald-400"
-                      : l.status === "WARNING"
-                      ? "text-amber-400"
-                      : "text-rose-400"
-                  }`}
-                >
-                  {l.status}
-                </span>
-              </div>
-              <div className="text-slate-200 font-sans text-xs mt-0.5">{l.message}</div>
-            </div>
-          ))}
-
-          {filteredLogs.length === 0 && (
-            <div className="py-12 text-center text-xs text-slate-500">
-              No audit logs match your filter criteria.
+        <div className="flex items-center gap-4">
+          {integrity && (
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className={`w-2 h-2 rounded-full ${integrity.valid ? "bg-emerald-600" : "bg-rose-600"}`} />
+              <span className="text-[#000000] font-semibold">
+                {integrity.valid ? `AUDIT INTEGRITY: VALID (${integrity.count} events)` : "AUDIT INTEGRITY: COMPROMISED"}
+              </span>
             </div>
           )}
+
+          <button
+            onClick={handleVerify}
+            disabled={verifying}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#000000] text-white text-xs font-medium rounded-full hover:bg-[#1D1D1F] transition disabled:opacity-50 shadow-sm"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            {verifying ? "Recomputing Chain..." : "Verify Audit Integrity"}
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Event Table */}
+      <div className="bg-white border border-[#E5E5E7] rounded-2xl p-5 shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-[#E5E5E7] text-[#86868B] font-mono uppercase text-[11px]">
+                <th className="pb-3 font-medium">Timestamp</th>
+                <th className="pb-3 font-medium">Stage</th>
+                <th className="pb-3 font-medium">Case ID</th>
+                <th className="pb-3 font-medium">Actor</th>
+                <th className="pb-3 font-medium">Message & Telemetry Details</th>
+                <th className="pb-3 font-medium text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E5E7]">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[#86868B] font-mono">
+                    Loading audit records...
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[#6E6E73]">
+                    No audit events recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#F5F5F7] transition">
+                    <td className="py-3.5 font-mono text-[#86868B] whitespace-nowrap">
+                      {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
+                    </td>
+                    <td className="py-3.5 font-mono font-semibold text-[#000000]">
+                      {log.stage}
+                    </td>
+                    <td className="py-3.5 font-mono font-semibold text-[#000000]">
+                      {log.case_id}
+                    </td>
+                    <td className="py-3.5 text-[#6E6E73] font-mono">
+                      {log.actor}
+                    </td>
+                    <td className="py-3.5 text-[#1D1D1F] leading-relaxed max-w-md">
+                      <div>{log.message}</div>
+                      {log.event_hash && (
+                        <div className="text-[10px] font-mono text-[#86868B] truncate mt-0.5">
+                          hash: {log.event_hash.slice(0, 16)}...
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 text-right">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-[#F5F5F7] border border-[#E5E5E7] text-[#1D1D1F]">
+                        {log.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

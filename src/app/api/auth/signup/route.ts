@@ -35,11 +35,11 @@ export async function POST(req: Request) {
       confidence_threshold: 0.85,
       high_value_limit: 50000,
       max_attempts: 1,
-      allowed_actions: ["resend_webhook", "retrigger_bank_leg", "correct_destination"],
+      allowed_actions: ["resend_webhook", "reconcile_state", "refresh_status", "verify_refund"],
     });
 
-    // Seed 100 sample cases for this new workspace
-    Database.regenerateSandboxDataset(workspace.id, Math.floor(Math.random() * 89999 + 10000), "normal", 100);
+    // Seed sample cases for this new workspace
+    Database.regenerateSandboxDataset(workspace.id, Math.floor(Math.random() * 89999 + 10000), "normal", 50);
 
     const session = Database.createSession(user.id, workspace.id);
 

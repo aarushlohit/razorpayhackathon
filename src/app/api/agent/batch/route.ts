@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { RefundStore } from "@/lib/simulator/store";
+import { requireAuth } from "@/lib/auth";
+import { Database } from "@/lib/db";
 import { runAgentLoopForCase, LoopExecutionResult } from "@/lib/agent/loop-orchestrator";
 
 export async function POST(req: Request) {
   try {
+    const { workspace } = await requireAuth();
     const body = await req.json().catch(() => ({}));
     const limit = Math.min(Number(body.limit) || 10, 30);
     const apiKeyOverride = body.apiKeyOverride;
 
-    const all = RefundStore.getAllCases();
+    const all = Database.getCases(workspace.id);
     const limboCases = all.filter((c) => c.current_status === "LIMBO").slice(0, limit);
 
     if (limboCases.length === 0) {
@@ -20,19 +22,19 @@ export async function POST(req: Request) {
     }
 
     const results: LoopExecutionResult[] = [];
-    let totalRecovered = 0;
+    let totalResolved = 0;
 
     for (const c of limboCases) {
-      const res = await runAgentLoopForCase(c.case_id, apiKeyOverride);
+      const res = await runAgentLoopForCase(workspace.id, c.case_id, apiKeyOverride);
       results.push(res);
-      totalRecovered += res.value_recovered;
+      totalResolved += res.value_resolved;
     }
 
     return NextResponse.json({
       success: true,
       data: {
         processed: results.length,
-        totalRecovered,
+        totalResolved,
         results,
       },
     });

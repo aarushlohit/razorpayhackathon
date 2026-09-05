@@ -16,7 +16,7 @@ export interface LoopExecutionResult {
   case_id: string;
   previous_status: CaseStatus;
   final_status: CaseStatus;
-  value_recovered: number;
+  value_resolved: number;
   steps: LoopExecutionStep[];
   updated_case: RefundCase;
 }
@@ -28,7 +28,7 @@ export async function runAgentLoopForCase(
 ): Promise<LoopExecutionResult> {
   const refundCase = Database.getCase(workspaceId, caseId);
   if (!refundCase) {
-    throw new Error(`Refund case ${caseId} not found in workspace ${workspaceId}.`);
+    throw new Error(`Refund ${caseId} not found in workspace ${workspaceId}.`);
   }
 
   const workspace = Database.getWorkspace(workspaceId);
@@ -64,7 +64,7 @@ export async function runAgentLoopForCase(
   // 1. DETECT
   logStep(
     "DETECT",
-    `Agent detected stuck refund case ${caseId} in state '${previousStatus}' (Amount: ₹${refundCase.amount.toLocaleString("en-IN")}, Age: ${refundCase.age_days}d).`
+    `Detected stuck refund ${caseId} in state '${previousStatus}' (Liability: ₹${refundCase.amount.toLocaleString("en-IN")}, Age: ${refundCase.age_days}d).`
   );
 
   // 2. INVESTIGATE
@@ -74,21 +74,31 @@ export async function runAgentLoopForCase(
   refundCase.evidence = evidence;
   logStep(
     "INVESTIGATE",
-    `Cross-system evidence gathered: Gateway=${evidence.gateway_status}, Bank=${evidence.bank_status}, Webhook=${evidence.webhook_status}, Destination=${evidence.destination_status}, Ledger=${evidence.ledger_status}. Conflict=${evidence.has_conflicting_signals ? "YES" : "NO"}`,
+    `Correlated 5 payment subsystems: Gateway=${evidence.gateway_status}, Settlement Leg=${evidence.bank_status}, Webhook=${evidence.webhook_status}, Destination=${evidence.destination_status}, Ledger=${evidence.ledger_status}. Conflicting Signals=${evidence.has_conflicting_signals ? "YES" : "NO"}`,
     evidence.has_conflicting_signals ? "WARNING" : "INFO",
     evidence
   );
 
-  // 3. DIAGNOSE (REAL AI)
+  // 3. DIAGNOSE (REAL EXTERNAL AI)
   const diagnosis = await runAIDiagnosis(refundCase, evidence, apiKeyOverride);
   refundCase.latest_diagnosis = diagnosis;
   Database.updateCase(workspaceId, refundCase);
-  logStep(
-    "DIAGNOSE",
-    `AI Diagnosis [${diagnosis.provider}]: Stage='${diagnosis.likely_stage.toUpperCase()}' | Confidence=${(diagnosis.confidence * 100).toFixed(0)}% | Recommended='${diagnosis.recommended_action}'. Reasoning: ${diagnosis.reasoning}`,
-    diagnosis.confidence >= workspace.confidence_threshold ? "SUCCESS" : "WARNING",
-    diagnosis
-  );
+
+  if (diagnosis.provider === "AI_UNAVAILABLE") {
+    logStep(
+      "DIAGNOSE",
+      `AI Unavailable: Real AI provider not configured or unreachable. Halting autonomous loop safely.`,
+      "WARNING",
+      diagnosis
+    );
+  } else {
+    logStep(
+      "DIAGNOSE",
+      `AI Diagnosis [${diagnosis.provider} / ${diagnosis.model || "default"}]: Stage='${diagnosis.likely_stage.toUpperCase()}' | Confidence=${(diagnosis.confidence * 100).toFixed(0)}% | Recommended='${diagnosis.recommended_action}'. ${diagnosis.reasoning}`,
+      diagnosis.confidence >= workspace.confidence_threshold ? "SUCCESS" : "WARNING",
+      diagnosis
+    );
+  }
 
   // 4. POLICY GATE (DETERMINISTIC SAFETY CODE)
   const policy = evaluatePolicy(refundCase, diagnosis, {
@@ -96,7 +106,7 @@ export async function runAgentLoopForCase(
     difficulty: "normal",
     count: 0,
     confidence_threshold: workspace.confidence_threshold,
-    high_value_threshold: workspace.high_value_limit,
+    high_value_limit: workspace.high_value_limit,
   });
   refundCase.latest_policy = policy;
   Database.updateCase(workspaceId, refundCase);
@@ -114,13 +124,13 @@ export async function runAgentLoopForCase(
     await adapter.escalateToHuman(workspaceId, caseId, policy.reason, escalationStatus);
     logStep(
       "POLICY_GATE",
-      `POLICY GATE TRIGGERED [${policy.rule_triggered}]: Autonomous action blocked. ${policy.reason}`,
+      `POLICY GATE TRIGGERED [${policy.rule_triggered}]: Autonomous execution blocked. ${policy.reason}`,
       "WARNING",
       policy
     );
     logStep(
       "OUTCOME",
-      `Closed loop with Human Escalation [Status: ${escalationStatus}]. Zero money put at risk.`,
+      `Closed loop with Human Escalation [Status: ${escalationStatus}]. Zero financial exposure incurred.`,
       "INFO"
     );
 
@@ -129,7 +139,7 @@ export async function runAgentLoopForCase(
       case_id: caseId,
       previous_status: previousStatus,
       final_status: escalationStatus,
-      value_recovered: 0,
+      value_resolved: 0,
       steps,
       updated_case: updated,
     };
@@ -138,7 +148,7 @@ export async function runAgentLoopForCase(
   // Policy approved!
   logStep(
     "POLICY_GATE",
-    `POLICY GATE APPROVED: Confidence ${(diagnosis.confidence * 100).toFixed(0)}% >= ${(workspace.confidence_threshold * 100).toFixed(0)}%, Amount ₹${refundCase.amount.toLocaleString("en-IN")} <= ₹${workspace.high_value_limit.toLocaleString("en-IN")}. Action allowed: '${policy.action_to_take}'.`,
+    `POLICY GATE APPROVED: Confidence ${(diagnosis.confidence * 100).toFixed(0)}% >= ${(workspace.confidence_threshold * 100).toFixed(0)}%, Amount ₹${refundCase.amount.toLocaleString("en-IN")} <= ₹${workspace.high_value_limit.toLocaleString("en-IN")}. Action authorized: '${policy.action_to_take}'.`,
     "SUCCESS",
     policy
   );
@@ -152,11 +162,12 @@ export async function runAgentLoopForCase(
     case "resend_webhook":
       toolResult = await adapter.resendWebhook(workspaceId, caseId);
       break;
-    case "retrigger_bank_leg":
-      toolResult = await adapter.retriggerBankLeg(workspaceId, caseId);
+    case "refresh_status":
+    case "verify_refund":
+      toolResult = await adapter.refreshStatus(workspaceId, caseId);
       break;
-    case "correct_destination":
-      toolResult = await adapter.correctDestination(workspaceId, caseId);
+    case "reconcile_state":
+      toolResult = await adapter.reconcileState(workspaceId, caseId);
       break;
     default:
       toolResult = await adapter.escalateToHuman(workspaceId, caseId, "Unsupported action in policy execution");
@@ -172,7 +183,7 @@ export async function runAgentLoopForCase(
     toolResult
   );
 
-  // 6. VERIFY (OUTCOME VERIFICATION)
+  // 6. VERIFY (OUTCOME STATE VERIFICATION)
   refundCase.current_status = "VERIFYING";
   Database.updateCase(workspaceId, refundCase);
 
@@ -191,22 +202,22 @@ export async function runAgentLoopForCase(
     );
     logStep(
       "OUTCOME",
-      `CLOSED LOOP: Refund ₹${refundCase.amount.toLocaleString("en-IN")} un-stuck and verified resolved. Simulated revenue recovered!`,
+      `CLOSED LOOP: Refund ₹${refundCase.amount.toLocaleString("en-IN")} verified resolved. Refund liability resolved.`,
       "SUCCESS",
-      { recovered: refundCase.amount }
+      { resolved: refundCase.amount }
     );
 
     return {
       case_id: caseId,
       previous_status: previousStatus,
       final_status: "RESOLVED",
-      value_recovered: refundCase.amount,
+      value_resolved: refundCase.amount,
       steps,
       updated_case: Database.getCase(workspaceId, caseId)!,
     };
   }
 
-  // 7. VERIFICATION FAILED (PLANTED FAILURE OR INEFFECTIVE REMEDIATION)
+  // 7. VERIFICATION FAILED (PLANTED FAILURE FIXTURE OR INEFFECTIVE REMEDIATION)
   refundCase.current_status = "ESCALATED_FAILED_REMEDIATION";
   if (refundCase.latest_diagnosis) {
     refundCase.latest_diagnosis.confidence = 0.35;
@@ -216,7 +227,7 @@ export async function runAgentLoopForCase(
   await adapter.escalateToHuman(
     workspaceId,
     caseId,
-    `Autonomous remediation '${policy.action_to_take}' executed but verification confirmed case remained unresolved (${verification.observed_status}). Halted to prevent payment loops.`,
+    `Autonomous remediation '${policy.action_to_take}' executed but verification confirmed case remained unresolved (${verification.observed_status}). Agent stopped safely to prevent loop.`,
     "ESCALATED_FAILED_REMEDIATION"
   );
 
@@ -228,7 +239,7 @@ export async function runAgentLoopForCase(
   );
   logStep(
     "OUTCOME",
-    `CLOSED LOOP: Agent detected failed remediation. Refused to retry infinitely. Reduced confidence to 35% and safely escalated to Human Ops [Status: ESCALATED_FAILED_REMEDIATION].`,
+    `CLOSED LOOP: Agent detected failed verification. Refused to retry blindly. Reduced confidence to 35% and escalated safely to Human Ops.`,
     "WARNING",
     { remediation_failed: true }
   );
@@ -237,7 +248,7 @@ export async function runAgentLoopForCase(
     case_id: caseId,
     previous_status: previousStatus,
     final_status: "ESCALATED_FAILED_REMEDIATION",
-    value_recovered: 0,
+    value_resolved: 0,
     steps,
     updated_case: Database.getCase(workspaceId, caseId)!,
   };

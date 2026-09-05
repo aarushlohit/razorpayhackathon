@@ -33,7 +33,7 @@ export interface Workspace {
   id: string;
   name: string;
   slug: string;
-  provider: "razorpay_test" | "sandbox";
+  provider: "razorpay_live" | "sandbox";
   autonomy_mode: AutonomyMode;
   confidence_threshold: number;
   high_value_limit: number;
@@ -75,8 +75,9 @@ export interface EvidencePackage {
 
 export type AllowedAction =
   | "resend_webhook"
-  | "retrigger_bank_leg"
-  | "correct_destination"
+  | "reconcile_state"
+  | "refresh_status"
+  | "verify_refund"
   | "escalate_to_human";
 
 export interface DiagnosisResult {
@@ -85,8 +86,11 @@ export interface DiagnosisResult {
   recommended_action: AllowedAction;
   reasoning: string;
   evidence_used?: string[];
-  provider: "gemini" | "nvidia" | "opencode" | "local_fallback" | "deterministic_heuristic";
+  provider: "gemini" | "nvidia" | "opencode" | "AI_UNAVAILABLE" | string;
+  model?: string;
   raw_response?: string;
+  error?: string;
+  latency_ms?: number;
 }
 
 export interface PolicyDecision {
@@ -110,7 +114,7 @@ export interface ToolExecutionResult {
   success: boolean;
   output: string;
   payload?: Record<string, any>;
-  provider_environment?: "RAZORPAY_TEST" | "SANDBOX";
+  provider_environment?: "RAZORPAY_LIVE" | "DEVELOPMENT_SANDBOX" | "SANDBOX";
 }
 
 export interface OutcomeVerification {
@@ -149,6 +153,7 @@ export interface RefundCase {
 export interface AuditLogEntry {
   id: string;
   workspace_id?: string;
+  run_id?: string;
   case_id: string;
   timestamp: string;
   actor?: "AGENT_CORE" | "POLICY_ENGINE" | "HUMAN_OPERATOR" | "SYSTEM" | string;
@@ -158,6 +163,8 @@ export interface AuditLogEntry {
   message: string;
   status: "SUCCESS" | "WARNING" | "FAILURE" | "INFO";
   details?: Record<string, any>;
+  previous_hash?: string;
+  event_hash?: string;
 }
 
 export interface SandboxConfig {
@@ -171,5 +178,6 @@ export interface SimulatorConfig {
   difficulty: "easy" | "normal" | "ambiguous";
   count: number;
   confidence_threshold: number;
-  high_value_threshold: number;
+  high_value_limit?: number;
+  high_value_threshold?: number;
 }

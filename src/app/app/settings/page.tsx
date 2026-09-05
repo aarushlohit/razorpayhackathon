@@ -55,44 +55,43 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-8 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Settings & Governance</h1>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Configure autonomous boundaries, payment switch adapters, and AI models.
+        <h1 className="text-3xl font-bold tracking-tight text-[#000000]">Settings</h1>
+        <p className="text-[14px] text-[#6E6E73] mt-1">
+          Configure autonomy boundaries, payment switch adapters, AI providers, and safety limits.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-white border border-[#E5E5E7] rounded-2xl divide-y divide-[#E5E5E7] shadow-2xs">
         {sections.map((s) => {
           const Icon = s.icon;
           return (
             <Link
               key={s.href}
               href={s.href}
-              className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 transition flex flex-col justify-between group"
+              className="p-5 hover:bg-[#F5F5F7] transition flex items-center justify-between group"
             >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  {s.badge && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-bold">
-                      {s.badge}
-                    </span>
-                  )}
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] text-[#1D1D1F] flex items-center justify-center border border-[#E5E5E7]">
+                  <Icon className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition">
-                  {s.title}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{s.desc}</p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-[#000000]">
+                      {s.title}
+                    </h3>
+                    {s.badge && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F5F5F7] text-[#1D1D1F] border border-[#E5E5E7] font-medium">
+                        {s.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#6E6E73] mt-0.5">{s.desc}</p>
+                </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-xs text-blue-400 font-semibold gap-1">
-                <span>Configure</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-              </div>
+              <ArrowRight className="w-4 h-4 text-[#86868B] group-hover:text-[#000000] group-hover:translate-x-0.5 transition" />
             </Link>
           );
         })}

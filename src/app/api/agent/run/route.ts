@@ -17,24 +17,24 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         message: "No pending limbo cases in queue.",
-        data: { processed: 0, totalRecovered: 0, results: [] },
+        data: { processed: 0, totalResolved: 0, results: [] },
       });
     }
 
     const results: LoopExecutionResult[] = [];
-    let totalRecovered = 0;
+    let totalResolved = 0;
 
     for (const c of limbo) {
       const res = await runAgentLoopForCase(workspace.id, c.case_id, apiKeyOverride);
       results.push(res);
-      totalRecovered += res.value_recovered;
+      totalResolved += res.value_resolved;
     }
 
     return NextResponse.json({
       success: true,
       data: {
         processed: results.length,
-        totalRecovered,
+        totalResolved,
         results,
       },
     });

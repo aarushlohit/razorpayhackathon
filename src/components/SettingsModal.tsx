@@ -22,7 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   userApiKey: initialApiKey,
 }) => {
   const [confidenceCutoff, setConfidenceCutoff] = useState(config.confidence_threshold * 100);
-  const [highValueLimit, setHighValueLimit] = useState(config.high_value_threshold);
+  const [highValueLimit, setHighValueLimit] = useState(config.high_value_limit ?? config.high_value_threshold ?? 50000);
   const [provider, setProvider] = useState(initialProvider || "gemini");
   const [apiKey, setApiKey] = useState(initialApiKey || "");
   const [saved, setSaved] = useState(false);

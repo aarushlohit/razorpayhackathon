@@ -33,6 +33,11 @@ function hashPassword(password: string, salt: string): string {
   return crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
 }
 
+function computeEventHash(previousHash: string, caseId: string, stage: string, action: string, timestamp: string): string {
+  const content = `${previousHash}:${caseId}:${stage}:${action}:${timestamp}`;
+  return crypto.createHash("sha256").update(content).digest("hex");
+}
+
 function initDb(): DatabaseSchema {
   if (globalThis.__APP_DATABASE__) {
     return globalThis.__APP_DATABASE__;
@@ -75,20 +80,20 @@ function initDb(): DatabaseSchema {
     id: "ws_razorpay_demo",
     name: "Razorpay Enterprise Ops",
     slug: "razorpay-ops",
-    provider: process.env.RAZORPAY_KEY_ID ? "razorpay_test" : "sandbox",
+    provider: process.env.RAZORPAY_KEY_ID ? "razorpay_live" : "sandbox",
     autonomy_mode: "APPROVAL_REQUIRED",
     confidence_threshold: 0.85,
     high_value_limit: 50000,
     max_attempts: 1,
-    allowed_actions: ["resend_webhook", "retrigger_bank_leg", "correct_destination"],
+    allowed_actions: ["resend_webhook", "reconcile_state", "refresh_status", "verify_refund"],
     created_at: new Date().toISOString(),
   };
 
-  // Generate 300 synthetic cases for default workspace
+  // Generate synthetic cases for default workspace
   const generated = generateRefundDataset({
     seed: 12345,
     difficulty: "normal",
-    count: 300,
+    count: 100,
     confidence_threshold: 0.85,
     high_value_threshold: 50000,
   });
@@ -104,18 +109,24 @@ function initDb(): DatabaseSchema {
     casesMap[fullCase.case_id] = fullCase;
   }
 
+  const initialTimestamp = new Date().toISOString();
+  const genesisHash = "0".repeat(64);
+  const firstEventHash = computeEventHash(genesisHash, "SYSTEM", "DETECT", "WORKSPACE_PROVISIONED", initialTimestamp);
+
   const initialAudit: AuditLogEntry[] = [
     {
       id: `audit_init_${Date.now()}`,
       workspace_id: demoWorkspace.id,
       case_id: "SYSTEM",
-      timestamp: new Date().toISOString(),
+      timestamp: initialTimestamp,
       actor: "SYSTEM",
       stage: "DETECT",
       action: "WORKSPACE_PROVISIONED",
       provider: demoWorkspace.provider,
       message: `Refund Loop operations database seeded for workspace '${demoWorkspace.name}' (${generated.length} refunds loaded).`,
       status: "INFO",
+      previous_hash: genesisHash,
+      event_hash: firstEventHash,
     },
   ];
 
@@ -126,7 +137,7 @@ function initDb(): DatabaseSchema {
     cases: casesMap,
     audit_logs: initialAudit,
     sandbox_configs: {
-      [demoWorkspace.id]: { seed: 12345, difficulty: "normal", count: 300 },
+      [demoWorkspace.id]: { seed: 12345, difficulty: "normal", count: 100 },
     },
   };
 
@@ -268,7 +279,7 @@ export const Database = {
     return newCase;
   },
 
-  // Audit Logs (Workspace Scoped)
+  // Audit Logs (Cryptographic Append-Only Tamper-Evident Hash Chain)
   getAuditLogs(workspaceId: string, limit = 200): AuditLogEntry[] {
     const db = initDb();
     return db.audit_logs
@@ -277,19 +288,67 @@ export const Database = {
       .reverse();
   },
 
-  addAuditLog(entry: Omit<AuditLogEntry, "id" | "timestamp">): AuditLogEntry {
+  addAuditLog(entry: Omit<AuditLogEntry, "id" | "timestamp" | "previous_hash" | "event_hash">): AuditLogEntry {
     const db = initDb();
+    const workspaceLogs = db.audit_logs.filter((l) => l.workspace_id === entry.workspace_id);
+    const lastLog = workspaceLogs[workspaceLogs.length - 1];
+    const previous_hash = lastLog?.event_hash || "0".repeat(64);
+    const timestamp = new Date().toISOString();
+    const event_hash = computeEventHash(
+      previous_hash,
+      entry.case_id,
+      entry.stage,
+      entry.action || entry.stage,
+      timestamp
+    );
+
     const newEntry: AuditLogEntry = {
       ...entry,
       id: `audit_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
-      timestamp: new Date().toISOString(),
+      timestamp,
+      previous_hash,
+      event_hash,
     };
     db.audit_logs.push(newEntry);
-    if (db.audit_logs.length > 2000) {
+    if (db.audit_logs.length > 5000) {
       db.audit_logs.shift();
     }
     saveToDisk(db);
     return newEntry;
+  },
+
+  verifyAuditIntegrity(workspaceId: string): { valid: boolean; count: number; error?: string } {
+    const db = initDb();
+    const workspaceLogs = db.audit_logs.filter((l) => l.workspace_id === workspaceId);
+    let expectedPrevious = "0".repeat(64);
+
+    for (let i = 0; i < workspaceLogs.length; i++) {
+      const log = workspaceLogs[i];
+      if (log.previous_hash !== expectedPrevious) {
+        return {
+          valid: false,
+          count: workspaceLogs.length,
+          error: `Broken chain at entry index ${i} (ID: ${log.id}). Previous hash mismatch.`,
+        };
+      }
+      const recalculated = computeEventHash(
+        log.previous_hash,
+        log.case_id,
+        log.stage,
+        log.action || log.stage,
+        log.timestamp
+      );
+      if (log.event_hash !== recalculated) {
+        return {
+          valid: false,
+          count: workspaceLogs.length,
+          error: `Tampered hash at entry index ${i} (ID: ${log.id}). Content does not match cryptographic signature.`,
+        };
+      }
+      expectedPrevious = log.event_hash;
+    }
+
+    return { valid: true, count: workspaceLogs.length };
   },
 
   // Sandbox Config (Workspace Scoped)
@@ -299,7 +358,7 @@ export const Database = {
       db.sandbox_configs[workspaceId] || {
         seed: 12345,
         difficulty: "normal",
-        count: 300,
+        count: 100,
       }
     );
   },
@@ -308,7 +367,7 @@ export const Database = {
     workspaceId: string,
     seed: number,
     difficulty: "easy" | "normal" | "ambiguous",
-    count = 300
+    count = 100
   ): RefundCase[] {
     const db = initDb();
     db.sandbox_configs[workspaceId] = { seed, difficulty, count };
@@ -319,6 +378,9 @@ export const Database = {
         delete db.cases[key];
       }
     }
+
+    // Reset audit logs for this workspace
+    db.audit_logs = db.audit_logs.filter((l) => l.workspace_id !== workspaceId);
 
     // Generate fresh cases
     const dataset = generateRefundDataset({
@@ -344,8 +406,8 @@ export const Database = {
       actor: "SYSTEM",
       stage: "DETECT",
       action: "SANDBOX_DATASET_REGENERATED",
-      provider: "SANDBOX",
-      message: `Regenerated developer sandbox with seed ${seed}, difficulty '${difficulty}' (${dataset.length} cases).`,
+      provider: "DEVELOPMENT_SANDBOX",
+      message: `Regenerated test dataset with seed ${seed}, difficulty '${difficulty}' (${dataset.length} cases).`,
       status: "INFO",
     });
 
