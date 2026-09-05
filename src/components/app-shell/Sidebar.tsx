@@ -63,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ workspace, user }) => {
 
   const navItems = [
     { label: "Overview", href: "/app", icon: LayoutDashboard },
+    { label: "Settings", href: "/app/settings", icon: Settings },
     {
       label: "Recovery Queue",
       href: "/app/recovery",
@@ -72,14 +73,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ workspace, user }) => {
     { label: "Agent Center", href: "/app/agent", icon: Bot },
     { label: "AI Decisions", href: "/app/agent/decisions", icon: BrainCircuit },
     { label: "Audit Ledger", href: "/app/audit", icon: FileText },
-  ];
-
-  const settingsItems = [
-    { label: "Autonomy Controls", href: "/app/settings/autonomy", icon: Sliders },
-    { label: "AI Configuration", href: "/app/settings/ai", icon: Zap },
-    { label: "Integrations", href: "/app/settings/integrations", icon: Layers },
-    { label: "Policy Rules", href: "/app/settings/policies", icon: Shield },
-    { label: "Developer Sandbox", href: "/app/settings/sandbox", icon: Database },
   ];
 
   return (
@@ -119,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ workspace, user }) => {
             Core Operations
           </div>
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href === "/app/settings" && pathname.startsWith("/app/settings"));
             const Icon = item.icon;
             return (
               <Link
@@ -140,31 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ workspace, user }) => {
                     {item.subCount}
                   </span>
                 )}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Settings Nav */}
-        <div className="px-3 py-3 space-y-0.5 border-t border-slate-800/60 mt-3">
-          <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            Configuration
-          </div>
-          {settingsItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
-                  isActive
-                    ? "bg-slate-800 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? "text-blue-400" : "text-slate-500"}`} />
-                <span>{item.label}</span>
               </Link>
             );
           })}
