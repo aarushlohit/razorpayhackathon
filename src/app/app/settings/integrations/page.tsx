@@ -421,7 +421,7 @@ export default function IntegrationsPage() {
           <div className="space-y-1">
             <span className="font-semibold text-[#1D1D1F] block">Inbound Webhook Receiver Endpoint</span>
             <code className="text-[11px] font-mono bg-[#F5F5F7] px-2 py-1 rounded text-[#1D1D1F] border border-[#E5E5E7] select-all">
-              {typeof window !== "undefined" ? window.location.origin : "https://your-domain.com"}/api/webhooks/razorpay
+              https://razorpayhackathon.vercel.app/api/webhooks/razorpay
             </code>
           </div>
           <div className="text-[11px] text-[#86868B] max-w-xs">

@@ -51,8 +51,12 @@ function initDb(): DatabaseSchema {
   }
 
   // Ensure data directory exists
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn("Could not create data directory (likely read-only environment like Vercel).", err);
   }
 
   // If db.json exists on disk, load it
