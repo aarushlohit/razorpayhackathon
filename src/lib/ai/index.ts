@@ -206,10 +206,14 @@ export async function runAIDiagnosis(
   // Overall 50-second deadline across all provider attempts
   const overallDeadline = startedAt + 50_000;
 
-  const geminiKey =
-    keyOverride?.provider === "gemini" && keyOverride.apiKey
-      ? keyOverride.apiKey
-      : process.env.GEMINI_API_KEY;
+  const geminiKeys: string[] = [];
+  if (keyOverride?.provider === "gemini" && keyOverride.apiKey) {
+    geminiKeys.push(keyOverride.apiKey);
+  } else {
+    if (process.env.GEMINI_API_KEY) geminiKeys.push(process.env.GEMINI_API_KEY);
+    if (process.env.GEMINI_API_KEY2) geminiKeys.push(process.env.GEMINI_API_KEY2);
+    if (process.env.GEMINI_API_KEY3) geminiKeys.push(process.env.GEMINI_API_KEY3);
+  }
 
   const nvidiaKey =
     keyOverride?.provider === "nvidia" && keyOverride.apiKey
@@ -226,69 +230,79 @@ export async function runAIDiagnosis(
   const preferredProvider = keyOverride?.provider;
 
   async function tryGemini(): Promise<DiagnosisResult | null> {
-    if (!geminiKey || timeRemaining() < 2500) return null;
-    const models = ["gemini-2.5-flash", "gemini-3-flash-preview"];
-    for (const model of models) {
-      if (timeRemaining() < 2500) break;
-      try {
-        const reqStart = Date.now();
-        const timeout = Math.min(12_000, timeRemaining() - 300);
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` }],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: "application/json",
-              },
-            }),
-            signal: AbortSignal.timeout(timeout),
-          }
-        );
+    if (geminiKeys.length === 0 || timeRemaining() < 2500) return null;
+    const models = [
+      "gemini-3.6-flash",
+      "gemini-3.7-flash",
+      "gemini-flash-latest",
+      "gemini-2.5-flash",
+      "gemini-3-flash-preview",
+    ];
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawContent) {
-            try {
-              const parsed = healAndParseJson(rawContent);
-              const validated = DiagnosisSchema.safeParse(parsed);
-              if (validated.success) {
-                console.log(`[AI] Gemini (${model}) succeeded in ${Date.now() - reqStart}ms`);
-                const normalized = normalizeDiagnosisResult(validated.data);
-                return {
-                  ...normalized,
-                  provider: "gemini",
-                  model,
-                  raw_response: rawContent,
-                  latency_ms: Date.now() - reqStart,
-                };
-              } else {
-                console.warn(`[AI] Gemini (${model}) schema invalid:`, validated.error.format());
+    for (const key of geminiKeys) {
+      if (timeRemaining() < 2500) break;
+      for (const model of models) {
+        if (timeRemaining() < 2500) break;
+        try {
+          const reqStart = Date.now();
+          const timeout = Math.min(10_000, timeRemaining() - 300);
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: "user",
+                    parts: [{ text: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` }],
+                  },
+                ],
+                generationConfig: {
+                  temperature: 0.2,
+                  responseMimeType: "application/json",
+                },
+              }),
+              signal: AbortSignal.timeout(timeout),
+            }
+          );
+
+          if (res.ok) {
+            const data = await res.json();
+            const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawContent) {
+              try {
+                const parsed = healAndParseJson(rawContent);
+                const validated = DiagnosisSchema.safeParse(parsed);
+                if (validated.success) {
+                  console.log(`[AI] Gemini (${model}, key ${key.slice(0, 8)}...) succeeded in ${Date.now() - reqStart}ms`);
+                  const normalized = normalizeDiagnosisResult(validated.data);
+                  return {
+                    ...normalized,
+                    provider: "gemini",
+                    model,
+                    raw_response: rawContent,
+                    latency_ms: Date.now() - reqStart,
+                  };
+                } else {
+                  console.warn(`[AI] Gemini (${model}) schema invalid:`, validated.error.format());
+                }
+              } catch (parseErr: any) {
+                console.warn(`[AI] Gemini (${model}) parse failed:`, parseErr?.message);
               }
-            } catch (parseErr: any) {
-              console.warn(`[AI] Gemini (${model}) parse failed:`, parseErr?.message);
+            }
+          } else {
+            const status = res.status;
+            const errBody = await res.text().catch(() => "");
+            console.warn(`[AI] Gemini (${model}) HTTP ${status}:`, errBody.slice(0, 150));
+            if (status === 429) {
+              // Rate limited on this specific key, break to try next key immediately
+              break;
             }
           }
-        } else {
-          const status = res.status;
-          const errBody = await res.text().catch(() => "");
-          console.warn(`[AI] Gemini (${model}) HTTP ${status}:`, errBody.slice(0, 200));
-          if (status === 429 || isPermanentFailure(status)) {
-            // Quota exhausted or invalid key — break out to let next provider execute immediately
-            break;
-          }
+        } catch (err: any) {
+          console.warn(`[AI] Gemini (${model}) error: ${err?.message}`);
         }
-      } catch (err: any) {
-        console.warn(`[AI] Gemini (${model}) error: ${err?.message}`);
       }
     }
     return null;
@@ -445,7 +459,7 @@ export async function runAIDiagnosis(
   }
 
   // ─── ALL PROVIDERS FAILED — Honest unavailable state ──────────────────────
-  console.error(`[AI] All providers failed after ${Date.now() - startedAt}ms. Keys present: Gemini=${!!geminiKey}, NVIDIA=${!!nvidiaKey}, OpenCode=${!!openCodeKey}`);
+  console.error(`[AI] All providers failed after ${Date.now() - startedAt}ms. Keys present: Gemini=${geminiKeys.length > 0}, NVIDIA=${!!nvidiaKey}, OpenCode=${!!openCodeKey}`);
   return {
     likely_stage: null,
     confidence: null,
