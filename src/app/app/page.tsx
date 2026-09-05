@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { RefundCase, AuditLogEntry } from "@/types";
-import { ArrowRight, ChevronRight, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { ArrowRight, ChevronRight, CheckCircle2, Clock, AlertCircle, Download } from "lucide-react";
 
 interface OverviewMetrics {
   totalCases: number;
@@ -153,6 +153,24 @@ export default function DashboardOverviewPage() {
                 <span>RUN AGENTS</span>
               </>
             )}
+          </button>
+
+          <button
+            onClick={() => {
+              const headers = ["Case ID,Merchant,Amount,Failure Class,Status,Age Days"];
+              const csvData = cases.map(c => `${c.case_id},"${c.merchant_name}",${c.amount},${c.failure_class},${c.current_status},${c.age_days}`);
+              const blob = new Blob([headers.concat(csvData).join("\n")], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `refund_cases_${Date.now()}.csv`;
+              a.click();
+              window.URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#F5F5F7] text-[#1D1D1F] border border-[#E5E5E7] text-[13px] font-medium rounded-full hover:bg-[#E5E5E7] transition"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
           </button>
 
           <Link

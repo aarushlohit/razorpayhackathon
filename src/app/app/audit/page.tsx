@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AuditLogEntry } from "@/types";
-import { ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Download } from "lucide-react";
 
 export default function AuditLedgerPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
@@ -68,6 +68,28 @@ export default function AuditLedgerPage() {
               </span>
             </div>
           )}
+
+          <button
+            onClick={() => {
+              if (logs.length === 0) return;
+              const headers = ["Timestamp,Stage,Case ID,Actor,Message,Status,Event Hash"];
+              const csvData = logs.map(log => 
+                `${new Date(log.timestamp).toISOString()},${log.stage},${log.case_id},${log.actor},"${log.message.replace(/"/g, '""')}",${log.status},${log.event_hash || ""}`
+              );
+              const blob = new Blob([headers.concat(csvData).join("\n")], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `audit_ledger_${Date.now()}.csv`;
+              a.click();
+              window.URL.revokeObjectURL(url);
+            }}
+            disabled={logs.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#F5F5F7] text-[#1D1D1F] border border-[#E5E5E7] text-xs font-medium rounded-full hover:bg-[#E5E5E7] transition disabled:opacity-50 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export CSV
+          </button>
 
           <button
             onClick={handleVerify}
