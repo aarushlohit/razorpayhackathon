@@ -164,7 +164,7 @@ export default function LandingPage() {
               From uncertainty<br />to resolution.
             </h2>
             <p className="text-[16px] text-[#6E6E73] leading-relaxed">
-              A deterministic, auditable, multi-provider AI system for real post-payment operations.
+              An agentic, auditable, multi-provider AI system for real post-payment operations.
             </p>
             <div>
               <Link href="/app/agent" className="inline-flex items-center gap-1 text-[13px] font-medium text-[#000000] hover:underline">
@@ -260,7 +260,7 @@ export default function LandingPage() {
                 </div>
                 <h4 className="text-[14px] font-semibold text-[#000000]">Human-first safety</h4>
                 <p className="text-[13px] text-[#6E6E73] leading-relaxed">
-                  Bounded autonomy. The agent recommends, deterministic code approves, humans hold the key.
+                  Bounded autonomy. The agent recommends, cryptographic policy code approves, humans hold the key.
                 </p>
               </div>
             </div>

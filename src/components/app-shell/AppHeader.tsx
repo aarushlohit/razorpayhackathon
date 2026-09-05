@@ -49,9 +49,21 @@ export function Sidebar({ workspace, user }: SidebarProps) {
         </div>
 
         {/* Workspace Switcher */}
-        <div className="flex items-center justify-between p-2 bg-white border border-[#E5E5E7] rounded-xl text-xs shadow-2xs">
-          <div className="truncate font-medium text-[#1D1D1F]">{workspace.name}</div>
-          <ChevronDown className="w-3.5 h-3.5 text-[#86868B] shrink-0" />
+        <div className="flex items-center justify-between p-2.5 bg-white border border-[#E5E5E7] rounded-xl text-xs shadow-2xs hover:border-[#000000]/30 transition cursor-default">
+          <div className="flex items-center gap-2.5 truncate min-w-0">
+            <div className="w-6 h-6 rounded-md bg-[#1D1D1F] text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+              {user.name ? user.name.charAt(0).toUpperCase() : "A"}
+            </div>
+            <div className="truncate">
+              <div className="truncate font-semibold text-[#000000] text-xs leading-tight">
+                {user.name || "Aarush Lohit"}
+              </div>
+              <div className="text-[10px] text-[#86868B] truncate font-mono">
+                {workspace.name}
+              </div>
+            </div>
+          </div>
+          <ChevronDown className="w-3.5 h-3.5 text-[#86868B] shrink-0 ml-1" />
         </div>
 
         {/* Navigation Items */}

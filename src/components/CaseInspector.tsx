@@ -42,7 +42,7 @@ export const CaseInspector: React.FC<CaseInspectorProps> = ({
         <Server className="w-8 h-8 mb-2 text-slate-600" />
         <h3 className="text-sm font-semibold text-slate-300">No Case Selected</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-xs">
-          Select any refund row in the Live Queue to inspect evidence, LLM reasoning, deterministic policy rules, and verification outcome.
+          Select any refund row in the Live Queue to inspect evidence, LLM reasoning, agentic policy rules, and verification outcome.
         </p>
       </div>
     );
@@ -213,12 +213,12 @@ export const CaseInspector: React.FC<CaseInspectorProps> = ({
           )}
         </div>
 
-        {/* 3. Deterministic Policy Gate */}
+        {/* 3. Agentic Policy Gate */}
         <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 font-mono">
               <Shield className="w-3.5 h-3.5 text-blue-400" />
-              3. Deterministic Policy Gate (10 Rules)
+              3. Agentic Policy Gate (10 Rules)
             </h4>
             {latest_policy && (
               <span

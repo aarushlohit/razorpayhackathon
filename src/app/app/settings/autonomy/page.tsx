@@ -63,7 +63,7 @@ export default function AutonomySettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[#000000]">Autonomy & Governance</h1>
         <p className="text-[14px] text-[#6E6E73] mt-1">
-          Define deterministic boundaries, confidence cutoffs, and permitted bounded actions.
+          Define agentic safety boundaries, confidence cutoffs, and permitted bounded actions.
         </p>
       </div>
 

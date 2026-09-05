@@ -128,7 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <option value="gemini">Google Gemini 3 Flash / 2.0 Flash (Recommended)</option>
                   <option value="nvidia">NVIDIA NIM (meta/llama-3.2-11b)</option>
                   <option value="opencode">OpenCode Zen (mimo-v2.5-free)</option>
-                  <option value="heuristic">Deterministic Heuristic Fallback Engine (Offline)</option>
+                  <option value="heuristic">Heuristic Fallback Engine (Offline)</option>
                 </select>
               </div>
 

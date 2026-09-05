@@ -45,7 +45,7 @@ export default function AISettingsPage() {
           <input
             type="text"
             disabled
-            value="0.2 (Optimized for deterministic structured diagnosis)"
+            value="0.2 (Optimized for agentic structured diagnosis)"
             className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-400 font-mono"
           />
         </div>

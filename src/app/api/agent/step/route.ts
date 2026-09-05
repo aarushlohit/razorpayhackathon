@@ -8,7 +8,8 @@ export async function POST(req: Request) {
     const { workspace } = await requireAuth();
     const body = await req.json().catch(() => ({}));
     let caseId = body.case_id;
-    const apiKeyOverride = body.apiKeyOverride;
+    const provider = body.provider;
+    const apiKeyOverride = body.apiKeyOverride || (provider ? { provider } : undefined);
 
     if (!caseId) {
       const cases = Database.getCases(workspace.id);

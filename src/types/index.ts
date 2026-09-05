@@ -80,12 +80,42 @@ export type AllowedAction =
   | "verify_refund"
   | "escalate_to_human";
 
+export interface EvidenceEvaluation {
+  source: string;
+  observed: string;
+  interpretation: string;
+  supports: boolean;
+}
+
+export interface Hypothesis {
+  label: string;
+  confidence: number;
+  code?: string;
+}
+
+export interface AIAssessment {
+  primary_hypothesis: {
+    code: string;
+    label: string;
+    confidence: number;
+  };
+  summary: string;
+  evidence: EvidenceEvaluation[];
+  alternative_hypotheses: Hypothesis[];
+  recommended_action: {
+    action: AllowedAction;
+    reason: string;
+  };
+  uncertainty?: string;
+}
+
 export interface DiagnosisResult {
   likely_stage: "webhook_missing" | "bank_leg_stuck" | "invalid_destination" | "ledger_mismatch" | "ambiguous";
   confidence: number;
   recommended_action: AllowedAction;
   reasoning: string;
   evidence_used?: string[];
+  assessment?: AIAssessment;
   provider: "gemini" | "nvidia" | "opencode" | "AI_UNAVAILABLE" | string;
   model?: string;
   raw_response?: string;
@@ -93,18 +123,66 @@ export interface DiagnosisResult {
   latency_ms?: number;
 }
 
+export interface PolicyRuleEvaluation {
+  id: string; // e.g. "RULE_01_CONFIDENCE"
+  name: string;
+  passed: boolean;
+  observed: string;
+  threshold: string;
+  reason: string;
+}
+
 export interface PolicyDecision {
+  evaluation_id: string;
+  decision: "ALLOW" | "HALT" | "HUMAN_REVIEW";
   allowed: boolean;
   action_to_take: AllowedAction;
   rule_triggered: string;
   reason: string;
+  authorization_id?: string;
+  evaluated_at: string;
+  rules: PolicyRuleEvaluation[];
   checks: {
     confidence_passed: boolean;
     amount_passed: boolean;
     remediation_limit_passed: boolean;
     allowed_action_passed: boolean;
     evidence_complete_passed: boolean;
+    action_compatibility_passed?: boolean;
+    case_state_passed?: boolean;
+    workspace_isolation_passed?: boolean;
+    provider_state_passed?: boolean;
+    approved_tool_passed?: boolean;
   };
+}
+
+export interface ExecutionAuthorization {
+  authorization_id: string;
+  evaluation_id: string;
+  case_id: string;
+  workspace_id: string;
+  action: AllowedAction;
+  created_at: number;
+  expires_at: number;
+  consumed: boolean;
+  consumed_at?: number;
+  consumed_by?: string;
+  snapshot_hash: string;
+}
+
+export interface PolicyEvaluationRecord {
+  evaluation_id: string;
+  case_id: string;
+  workspace_id: string;
+  confidence: number;
+  amount: number;
+  requested_action: AllowedAction;
+  decision: "ALLOW" | "HALT" | "HUMAN_REVIEW";
+  rule_triggered: string;
+  reason: string;
+  authorization_id?: string;
+  rules: PolicyRuleEvaluation[];
+  evaluated_at: string;
 }
 
 export interface ToolExecutionResult {

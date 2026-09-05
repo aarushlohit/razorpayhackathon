@@ -50,7 +50,7 @@ export default function SandboxSettingsPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-white">Sandbox & Synthetic Simulator</h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Judge-Proofing controls: Regenerate synthetic datasets with deterministic seeds and adjust cross-system conflict difficulty.
+          Judge-Proofing controls: Regenerate synthetic datasets with fixed seeds and adjust cross-system conflict difficulty.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function SandboxSettingsPage() {
         )}
 
         <div>
-          <label className="block text-slate-300 font-semibold mb-1">Deterministic PRNG Seed</label>
+          <label className="block text-slate-300 font-semibold mb-1">Fixed PRNG Seed</label>
           <input
             type="number"
             value={seed}
@@ -71,7 +71,7 @@ export default function SandboxSettingsPage() {
             className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-blue-500"
           />
           <p className="text-[11px] text-slate-500 mt-1">
-            Judges can change this seed to verify that case distributions, merchant names, amounts, and planted failures change deterministically.
+            Judges can change this seed to verify that case distributions, merchant names, amounts, and planted failures change systematically.
           </p>
         </div>
 

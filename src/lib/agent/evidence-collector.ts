@@ -28,6 +28,11 @@ export function collectEvidence(refundCase: RefundCase): EvidencePackage {
 }
 
 export function formatEvidenceForPrompt(evidence: EvidencePackage, refundCase: RefundCase): string {
+  // Filter out meta-escalation events from previous AI loop runs so the LLM sees clean payment telemetry
+  const cleanTrail = evidence.event_trail.filter(
+    (e) => !e.event_type.startsWith("escalated_to_human")
+  );
+
   return `
 REFUND INVESTIGATION CASE: ${refundCase.case_id}
 ===================================================
@@ -45,6 +50,6 @@ SYSTEM TELEMETRY EVIDENCE:
 6. Cross-System Conflict Detected: ${evidence.has_conflicting_signals ? "YES - " + evidence.conflict_summary : "NO"}
 
 CHRONOLOGICAL EVENT TRAIL:
-${evidence.event_trail.map((e, idx) => `  [${idx + 1}] ${e.timestamp} | ${e.system} | ${e.event_type} | ${e.status} -> ${e.details}`).join("\n")}
+${cleanTrail.map((e, idx) => `  [${idx + 1}] ${e.timestamp} | ${e.system} | ${e.event_type} | ${e.status} -> ${e.details}`).join("\n")}
 `;
 }

@@ -2,7 +2,55 @@ import { z } from "zod";
 import { DiagnosisResult, EvidencePackage, RefundCase } from "@/types";
 import { formatEvidenceForPrompt } from "../agent/evidence-collector";
 
+export const EvidenceEvaluationSchema = z.union([
+  z.object({
+    source: z.string().default("telemetry"),
+    observed: z.string(),
+    interpretation: z.string().default(""),
+    supports: z.boolean().default(true),
+  }),
+  z.string().transform((str) => ({
+    source: "telemetry",
+    observed: str,
+    interpretation: str,
+    supports: true,
+  })),
+]);
+
+export const HypothesisSchema = z.object({
+  label: z.string(),
+  confidence: z.coerce.number().min(0).max(1),
+  code: z.string().optional(),
+});
+
+export const AIAssessmentSchema = z.object({
+  primary_hypothesis: z.object({
+    code: z.string(),
+    label: z.string(),
+    confidence: z.coerce.number().min(0).max(1),
+  }),
+  summary: z.string().min(1),
+  evidence: z.array(EvidenceEvaluationSchema).default([]),
+  alternative_hypotheses: z.array(HypothesisSchema).default([]),
+  recommended_action: z.object({
+    action: z.preprocess(
+      (val) => (typeof val === "string" ? val.toLowerCase().trim() : val),
+      z.enum([
+        "resend_webhook",
+        "reconcile_state",
+        "refresh_status",
+        "verify_refund",
+        "escalate_to_human",
+      ])
+    ),
+    reason: z.string(),
+  }),
+  uncertainty: z.string().optional(),
+});
+
 export const DiagnosisSchema = z.object({
+  assessment: AIAssessmentSchema.optional(),
+  // Top-level fallbacks / legacy compatibility mappings:
   likely_stage: z.preprocess(
     (val) => (typeof val === "string" ? val.toLowerCase().trim() : val),
     z.enum([
@@ -12,8 +60,8 @@ export const DiagnosisSchema = z.object({
       "ledger_mismatch",
       "ambiguous",
     ])
-  ),
-  confidence: z.coerce.number().min(0).max(1),
+  ).optional(),
+  confidence: z.coerce.number().min(0).max(1).optional(),
   recommended_action: z.preprocess(
     (val) => (typeof val === "string" ? val.toLowerCase().trim() : val),
     z.enum([
@@ -23,8 +71,8 @@ export const DiagnosisSchema = z.object({
       "verify_refund",
       "escalate_to_human",
     ])
-  ),
-  reasoning: z.string().min(1),
+  ).optional(),
+  reasoning: z.string().optional(),
   evidence_used: z.array(z.string()).default([]),
 });
 
@@ -45,22 +93,106 @@ export function healAndParseJson<T = any>(rawText: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-const SYSTEM_PROMPT = `You are the REFUND LOOP AI Payment Operations Diagnosis Engine.
-Analyze the provided cross-system payment refund evidence (Gateway, Bank Settlement Leg, Webhook Dispatcher, Beneficiary Destination, Internal Ledger).
-Determine the most likely failure stage, confidence score, recommended bounded action, and concise reasoning.
+const SYSTEM_PROMPT = `You are a payment operations investigation agent.
+You are given telemetry from multiple independent payment subsystems (Gateway, Settlement Leg, Webhook Dispatcher, Beneficiary Destination, Internal Ledger).
 
-Return ONLY strict JSON matching this schema — no prose, no markdown:
+EVIDENCE GROUNDING & ANTI-HALLUCINATION RULES:
+1. You may only infer from the supplied evidence.
+2. DO NOT invent payment-network events, bank responses, NPCI behavior, beneficiary account freezes, gateway statuses, or internal provider telemetry that is not explicitly present in the evidence.
+3. Do not simply map a status code to a diagnosis. Reason across the cross-system evidence.
+4. Identify the strongest primary hypothesis and consider alternative competing explanations.
+5. Explain which observations support or contradict each hypothesis.
+6. Do not invent HTTP codes, error IDs, or entity identifiers not supplied.
+7. Do not claim high certainty when evidence is contradictory, missing, or incomplete. If telemetry is ambiguous or conflicting, confidence MUST be between 0.40 and 0.70 and recommended action must be escalate_to_human.
+8. Recommend an action only when the evidence supports it.
+9. Your recommendation is NOT authorization to execute. A separate agentic policy engine controls execution.
+
+Return strict JSON only matching this schema — no markdown, no conversational text:
 {
-  "likely_stage": "webhook_missing" | "bank_leg_stuck" | "invalid_destination" | "ledger_mismatch" | "ambiguous",
-  "confidence": <number between 0.00 and 1.00 — if signals conflict or are missing, confidence MUST be <= 0.70>,
-  "recommended_action": "resend_webhook" | "reconcile_state" | "refresh_status" | "verify_refund" | "escalate_to_human",
-  "reasoning": "<Concise 1-2 sentence explanation citing specific evidence signals.>",
-  "evidence_used": ["<signal 1>", "<signal 2>"]
+  "assessment": {
+    "primary_hypothesis": {
+      "code": "WEBHOOK_DELIVERY_FAILURE" | "BANK_LEG_STALLED" | "INVALID_DESTINATION" | "LEDGER_DESYNCHRONIZATION" | "INCOMPLETE_TELEMETRY",
+      "label": "<Clear human-readable hypothesis title>",
+      "confidence": <number between 0.00 and 1.00>
+    },
+    "summary": "<Concise 1-2 sentence evidence-backed assessment of what occurred>",
+    "evidence": [
+      {
+        "source": "settlement" | "webhook_dispatcher" | "beneficiary_destination" | "merchant_ledger" | "payment_gateway",
+        "observed": "<exact observed value from telemetry>",
+        "interpretation": "<what this observation implies>",
+        "supports": true | false
+      }
+    ],
+    "alternative_hypotheses": [
+      {
+        "label": "<competing plausible explanation>",
+        "confidence": <number between 0.01 and 0.30>
+      }
+    ],
+    "recommended_action": {
+      "action": "resend_webhook" | "reconcile_state" | "refresh_status" | "verify_refund" | "escalate_to_human",
+      "reason": "<Specific operational rationale why this action is safe and addresses the failing layer>"
+    },
+    "uncertainty": "<What cannot be proven from supplied telemetry alone>"
+  },
+  "confidence": <number equal to primary_hypothesis.confidence>
 }`;
 
 // Whether to skip a provider when it returns a permanent failure code
 function isPermanentFailure(status: number): boolean {
   return status === 401 || status === 403 || status === 404;
+}
+
+// Map rich assessment to top-level diagnosis fields
+export function normalizeDiagnosisResult(parsed: any): DiagnosisResult {
+  const assessment = parsed.assessment;
+  
+  let likely_stage = parsed.likely_stage;
+  let confidence = parsed.confidence;
+  let recommended_action = parsed.recommended_action;
+  let reasoning = parsed.reasoning;
+  let evidence_used = parsed.evidence_used || [];
+
+  if (assessment) {
+    confidence = assessment.primary_hypothesis?.confidence ?? confidence ?? 0.5;
+    const rawCode = (assessment.primary_hypothesis?.code || "").toUpperCase();
+    if (rawCode.includes("WEBHOOK")) likely_stage = "webhook_missing";
+    else if (rawCode.includes("BANK") || rawCode.includes("SWITCH")) likely_stage = "bank_leg_stuck";
+    else if (rawCode.includes("DESTINATION") || rawCode.includes("VPA") || rawCode.includes("IFSC")) likely_stage = "invalid_destination";
+    else if (rawCode.includes("LEDGER") || rawCode.includes("RECONCIL")) likely_stage = "ledger_mismatch";
+    else likely_stage = "ambiguous";
+
+    if (assessment.recommended_action) {
+      if (typeof assessment.recommended_action === "string") {
+        recommended_action = assessment.recommended_action;
+      } else if (assessment.recommended_action.action) {
+        recommended_action = assessment.recommended_action.action;
+      }
+    }
+
+    reasoning = assessment.summary || reasoning || assessment.primary_hypothesis?.label || "AI assessment generated from cross-system payment evidence.";
+
+    if (Array.isArray(assessment.evidence)) {
+      evidence_used = assessment.evidence.map((e: any) => `${e.source}: ${e.observed} (${e.interpretation})`);
+    }
+  }
+
+  // Fallbacks if missing
+  if (!likely_stage) likely_stage = "ambiguous";
+  if (confidence === undefined || confidence === null) confidence = 0.5;
+  if (!recommended_action) recommended_action = "escalate_to_human";
+  if (!reasoning) reasoning = "Cross-system payment evidence correlation completed.";
+
+  return {
+    likely_stage,
+    confidence,
+    recommended_action,
+    reasoning,
+    evidence_used,
+    assessment,
+    provider: "gemini",
+  };
 }
 
 export async function runAIDiagnosis(
@@ -91,14 +223,18 @@ export async function runAIDiagnosis(
 
   const timeRemaining = () => Math.max(0, overallDeadline - Date.now());
 
-  // ─── 1. Google Gemini (PRIMARY) ────────────────────────────────────────────
-  if (geminiKey && timeRemaining() > 3000) {
-    const models = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.0-flash"];
+  const preferredProvider = keyOverride?.provider;
+
+  async function tryGemini(): Promise<DiagnosisResult | null> {
+    if (!geminiKey || timeRemaining() < 2500) return null;
+    // gemini-2.5-flash is ultra-fast (~1.6s) and confirmed working. gemini-3-flash-preview is backup.
+    // gemini-2.0-flash and 1.5-flash are deprecated/404.
+    const models = ["gemini-2.5-flash", "gemini-3-flash-preview"];
     for (const model of models) {
-      if (timeRemaining() < 3000) break;
+      if (timeRemaining() < 2500) break;
       try {
         const reqStart = Date.now();
-        const timeout = Math.min(28_000, timeRemaining() - 1000);
+        const timeout = Math.min(10_000, timeRemaining() - 300);
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
           {
@@ -129,117 +265,51 @@ export async function runAIDiagnosis(
               const validated = DiagnosisSchema.safeParse(parsed);
               if (validated.success) {
                 console.log(`[AI] Gemini (${model}) succeeded in ${Date.now() - reqStart}ms`);
+                const normalized = normalizeDiagnosisResult(validated.data);
                 return {
-                  ...validated.data,
+                  ...normalized,
                   provider: "gemini",
                   model,
                   raw_response: rawContent,
                   latency_ms: Date.now() - reqStart,
                 };
               } else {
-                console.warn(`[AI] Gemini (${model}) returned invalid schema:`, validated.error.format());
+                console.warn(`[AI] Gemini (${model}) schema invalid:`, validated.error.format());
               }
             } catch (parseErr: any) {
-              console.warn(`[AI] Gemini (${model}) JSON parse failed:`, parseErr?.message, rawContent?.slice(0, 200));
+              console.warn(`[AI] Gemini (${model}) parse failed:`, parseErr?.message);
             }
-          } else {
-            console.warn(`[AI] Gemini (${model}) returned empty content. Full response:`, JSON.stringify(data).slice(0, 400));
           }
         } else {
           const status = res.status;
           const errBody = await res.text().catch(() => "");
-          console.warn(`[AI] Gemini (${model}) HTTP ${status}:`, errBody.slice(0, 300));
-          // Skip remaining models on permanent failures (bad key, not found)
-          if (isPermanentFailure(status)) break;
+          console.warn(`[AI] Gemini (${model}) HTTP ${status}:`, errBody.slice(0, 200));
+          if (status === 429 || isPermanentFailure(status)) {
+            // Quota exhausted or invalid key — break out to let next provider execute immediately
+            break;
+          }
         }
       } catch (err: any) {
-        console.warn(`[AI] Gemini (${model}) exception: ${err?.message}`);
+        console.warn(`[AI] Gemini (${model}) error: ${err?.message}`);
       }
     }
+    return null;
   }
 
-  // ─── 2. NVIDIA NIM ─────────────────────────────────────────────────────────
-  if (nvidiaKey && timeRemaining() > 3000) {
-    try {
-      const reqStart = Date.now();
-      const nimModels = ["moonshotai/kimi-k3", "meta/llama-3.2-90b-vision-instruct"];
-      for (const nimModel of nimModels) {
-        if (timeRemaining() < 3000) break;
-        try {
-          const reqStart = Date.now();
-          const timeout = Math.min(20_000, timeRemaining() - 1000);
-          const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${nvidiaKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: nimModel,
-              messages: [
-                { role: "system", content: "You are Yokai AI. Output strict JSON only matching the requested schema." },
-                { role: "user", content: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` },
-              ],
-              temperature: 0.2,
-              response_format: { type: "json_object" },
-              max_tokens: 1024,
-            }),
-            signal: AbortSignal.timeout(timeout),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const rawContent = data?.choices?.[0]?.message?.content;
-            if (rawContent) {
-              try {
-                const parsed = healAndParseJson(rawContent);
-                const validated = DiagnosisSchema.safeParse(parsed);
-                if (validated.success) {
-                  console.log(`[AI] NVIDIA NIM (${nimModel}) succeeded in ${Date.now() - reqStart}ms`);
-                  return {
-                    ...validated.data,
-                    provider: "nvidia",
-                    model: nimModel,
-                    raw_response: rawContent,
-                    latency_ms: Date.now() - reqStart,
-                  };
-                } else {
-                  console.warn(`[AI] NVIDIA NIM (${nimModel}) invalid schema:`, validated.error.format());
-                }
-              } catch (parseErr: any) {
-                console.warn(`[AI] NVIDIA NIM (${nimModel}) parse failed:`, parseErr?.message);
-              }
-            }
-          } else {
-            const status = res.status;
-            const errBody = await res.text().catch(() => "");
-            console.warn(`[AI] NVIDIA NIM (${nimModel}) HTTP ${status}:`, errBody.slice(0, 300));
-          }
-        } catch (err: any) {
-          console.warn(`[AI] NVIDIA NIM (${nimModel}) exception: ${err?.message}`);
-        }
-      }
-    } catch (err: any) {
-      console.warn(`[AI] NVIDIA NIM outer exception: ${err?.message}`);
-    }
-  }
-
-  // ─── 3. OpenCode Zen ────────────────────────────────────────────────────────
-  if (openCodeKey && timeRemaining() > 3000) {
+  async function tryOpenCode(): Promise<DiagnosisResult | null> {
+    if (!openCodeKey || timeRemaining() < 2500) return null;
+    // ling-3.0-flash-fin-free is verified operational (~2.4s).
+    // mimo-v2.5-free is prone to 429; nemotron is slow.
     const openCodeModels = [
       "ling-3.0-flash-fin-free",
-      "nemotron-3.5-lightning-free",
       "mimo-v2.5-free",
-      "big-pickle",
-      "hy3-free",
-      "nemotron-3-ultra-free",
+      "nemotron-3.5-lightning-free",
     ];
-
     for (const ocModel of openCodeModels) {
-      if (timeRemaining() < 3000) break;
+      if (timeRemaining() < 2500) break;
       try {
         const reqStart = Date.now();
-        const timeout = Math.min(15_000, timeRemaining() - 1000);
+        const timeout = Math.min(8_000, timeRemaining() - 300);
         const res = await fetch("https://opencode.ai/zen/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -266,8 +336,9 @@ export async function runAIDiagnosis(
               const validated = DiagnosisSchema.safeParse(parsed);
               if (validated.success) {
                 console.log(`[AI] OpenCode Zen (${ocModel}) succeeded in ${Date.now() - reqStart}ms`);
+                const normalized = normalizeDiagnosisResult(validated.data);
                 return {
-                  ...validated.data,
+                  ...normalized,
                   provider: "opencode",
                   model: ocModel,
                   raw_response: rawContent,
@@ -283,12 +354,100 @@ export async function runAIDiagnosis(
         } else {
           const status = res.status;
           const errBody = await res.text().catch(() => "");
-          console.warn(`[AI] OpenCode (${ocModel}) HTTP ${status}:`, errBody.slice(0, 300));
+          console.warn(`[AI] OpenCode (${ocModel}) HTTP ${status}:`, errBody.slice(0, 200));
         }
       } catch (err: any) {
-        console.warn(`[AI] OpenCode (${ocModel}) exception: ${err?.message}`);
+        console.warn(`[AI] OpenCode (${ocModel}) error: ${err?.message}`);
       }
     }
+    return null;
+  }
+
+  async function tryNvidia(): Promise<DiagnosisResult | null> {
+    if (!nvidiaKey || timeRemaining() < 2500) return null;
+    // meta/llama-3.2-11b-vision-instruct is verified operational (HTTP 200)
+    const nimModels = ["meta/llama-3.2-11b-vision-instruct", "meta/llama-3.2-90b-vision-instruct"];
+    for (const nimModel of nimModels) {
+      if (timeRemaining() < 2500) break;
+      try {
+        const reqStart = Date.now();
+        const timeout = Math.min(10_000, timeRemaining() - 300);
+        const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${nvidiaKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: nimModel,
+            messages: [
+              { role: "system", content: "You are Yokai AI. Output strict JSON only matching the requested schema." },
+              { role: "user", content: `${SYSTEM_PROMPT}\n\nEvidence Details:\n${prompt}` },
+            ],
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+            max_tokens: 1024,
+          }),
+          signal: AbortSignal.timeout(timeout),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const rawContent = data?.choices?.[0]?.message?.content;
+          if (rawContent) {
+            try {
+              const parsed = healAndParseJson(rawContent);
+              const validated = DiagnosisSchema.safeParse(parsed);
+              if (validated.success) {
+                console.log(`[AI] NVIDIA NIM (${nimModel}) succeeded in ${Date.now() - reqStart}ms`);
+                const normalized = normalizeDiagnosisResult(validated.data);
+                return {
+                  ...normalized,
+                  provider: "nvidia",
+                  model: nimModel,
+                  raw_response: rawContent,
+                  latency_ms: Date.now() - reqStart,
+                };
+              } else {
+                console.warn(`[AI] NVIDIA NIM (${nimModel}) invalid schema:`, validated.error.format());
+              }
+            } catch (parseErr: any) {
+              console.warn(`[AI] NVIDIA NIM (${nimModel}) parse failed:`, parseErr?.message);
+            }
+          }
+        } else {
+          const status = res.status;
+          const errBody = await res.text().catch(() => "");
+          console.warn(`[AI] NVIDIA NIM (${nimModel}) HTTP ${status}:`, errBody.slice(0, 200));
+        }
+      } catch (err: any) {
+        console.warn(`[AI] NVIDIA NIM (${nimModel}) error: ${err?.message}`);
+      }
+    }
+    return null;
+  }
+
+  // Determine provider execution order
+  const providerList: { name: string; fn: () => Promise<DiagnosisResult | null> }[] = [];
+  if (preferredProvider === "opencode") {
+    providerList.push({ name: "opencode", fn: tryOpenCode });
+    providerList.push({ name: "gemini", fn: tryGemini });
+    providerList.push({ name: "nvidia", fn: tryNvidia });
+  } else if (preferredProvider === "nvidia") {
+    providerList.push({ name: "nvidia", fn: tryNvidia });
+    providerList.push({ name: "gemini", fn: tryGemini });
+    providerList.push({ name: "opencode", fn: tryOpenCode });
+  } else {
+    // Default fallback order: Gemini -> OpenCode -> NVIDIA
+    providerList.push({ name: "gemini", fn: tryGemini });
+    providerList.push({ name: "opencode", fn: tryOpenCode });
+    providerList.push({ name: "nvidia", fn: tryNvidia });
+  }
+
+  for (const p of providerList) {
+    if (timeRemaining() <= 2000) break;
+    const result = await p.fn();
+    if (result) return result;
   }
 
   // ─── ALL PROVIDERS FAILED — Honest unavailable state ──────────────────────

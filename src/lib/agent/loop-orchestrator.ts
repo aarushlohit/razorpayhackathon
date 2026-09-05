@@ -2,7 +2,8 @@ import { RefundCase, AuditLogEntry, CaseStatus, Workspace } from "@/types";
 import { Database } from "../db";
 import { collectEvidence } from "./evidence-collector";
 import { runAIDiagnosis } from "../ai";
-import { evaluatePolicy } from "../policy/engine";
+import { evaluateSecurityPolicy } from "../security/policy-engine";
+import { authorizeExecution, executeAuthorizedAction } from "../security/execution-authorizer";
 import { getPaymentAdapter } from "../payment/adapter";
 
 export interface LoopExecutionStep {
@@ -100,24 +101,23 @@ export async function runAgentLoopForCase(
     );
   }
 
-  // 4. POLICY GATE (DETERMINISTIC SAFETY CODE)
-  const policy = evaluatePolicy(refundCase, diagnosis, {
-    seed: 0,
-    difficulty: "normal",
-    count: 0,
-    confidence_threshold: workspace.confidence_threshold,
-    high_value_limit: workspace.high_value_limit,
+  // 4. POLICY GATE (AGENTIC SAFETY ENGINE)
+  console.log(`[LOOP] Gate: Routing through agentic policy engine`);
+  const policy = evaluateSecurityPolicy({
+    caseData: refundCase,
+    diagnosis,
+    workspace,
   });
   refundCase.latest_policy = policy;
   Database.updateCase(workspaceId, refundCase);
 
-  if (!policy.allowed) {
+  if (!policy.allowed || policy.decision !== "ALLOW") {
     let escalationStatus: CaseStatus = "ESCALATED_HUMAN";
-    if (policy.rule_triggered === "RULE_1_LOW_CONFIDENCE") {
+    if (policy.rule_triggered === "RULE_01_CONFIDENCE") {
       escalationStatus = "ESCALATED_LOW_CONFIDENCE";
-    } else if (policy.rule_triggered === "RULE_2_HIGH_VALUE_THRESHOLD") {
+    } else if (policy.rule_triggered === "RULE_02_HIGH_VALUE") {
       escalationStatus = "ESCALATED_HIGH_VALUE";
-    } else if (policy.rule_triggered === "RULE_3_MAX_REMEDIATION_LIMIT") {
+    } else if (policy.rule_triggered === "RULE_06_IDEMPOTENCY") {
       escalationStatus = "ESCALATED_MAX_REMEDIATIONS";
     }
 
@@ -145,60 +145,38 @@ export async function runAgentLoopForCase(
     };
   }
 
-  // Policy approved!
+  // ─── 4b. SIGNED / SERVER-GENERATED EXECUTION AUTHORIZATION ────────────────
+  const authz = authorizeExecution(policy, refundCase, workspaceId);
   logStep(
     "POLICY_GATE",
-    `POLICY GATE APPROVED: Confidence ${(diagnosis.confidence * 100).toFixed(0)}% >= ${(workspace.confidence_threshold * 100).toFixed(0)}%, Amount ₹${refundCase.amount.toLocaleString("en-IN")} <= ₹${workspace.high_value_limit.toLocaleString("en-IN")}. Action authorized: '${policy.action_to_take}'.`,
+    `POLICY GATE APPROVED: All 10 security guardrails passed. Signed authorization generated: ${authz.authorization_id} (TTL: 60s, Action: ${authz.action}).`,
     "SUCCESS",
-    policy
+    { policy, authorization_id: authz.authorization_id }
   );
 
-  // 5. ACT (VIA PAYMENT PROVIDER ADAPTER)
-  refundCase.current_status = "ACTION_IN_PROGRESS";
-  Database.updateCase(workspaceId, refundCase);
+  // ─── 5. ACT & 6. VERIFY VIA HARD SECURITY BOUNDARY ───────────────────────
+  const execResult = await executeAuthorizedAction({
+    authorizationId: authz.authorization_id,
+    caseId,
+    workspaceId,
+    consumer: "LOOP_ORCHESTRATOR",
+  });
 
-  let toolResult;
-  switch (policy.action_to_take) {
-    case "resend_webhook":
-      toolResult = await adapter.resendWebhook(workspaceId, caseId);
-      break;
-    case "refresh_status":
-    case "verify_refund":
-      toolResult = await adapter.refreshStatus(workspaceId, caseId);
-      break;
-    case "reconcile_state":
-      toolResult = await adapter.reconcileState(workspaceId, caseId);
-      break;
-    default:
-      toolResult = await adapter.escalateToHuman(workspaceId, caseId, "Unsupported action in policy execution");
-      break;
-  }
-
-  refundCase.latest_action = toolResult;
-  Database.updateCase(workspaceId, refundCase);
   logStep(
     "ACT",
-    `Action Executed [${toolResult.tool_name}] (${toolResult.provider_environment}): ${toolResult.output}`,
-    toolResult.success ? "SUCCESS" : "FAILURE",
-    toolResult
+    `Action Executed [${execResult.toolResult.tool_name}] (${execResult.toolResult.provider_environment}): ${execResult.toolResult.output}`,
+    execResult.toolResult.success ? "SUCCESS" : "FAILURE",
+    execResult.toolResult
   );
 
-  // 6. VERIFY (OUTCOME STATE VERIFICATION)
-  refundCase.current_status = "VERIFYING";
-  Database.updateCase(workspaceId, refundCase);
+  const updatedCaseAfterExec = Database.getCase(workspaceId, caseId)!;
 
-  const verification = await adapter.verifyRefundStatus(workspaceId, caseId);
-  refundCase.latest_verification = verification;
-
-  if (verification.observed_status === "RESOLVED") {
-    refundCase.current_status = "RESOLVED";
-    Database.updateCase(workspaceId, refundCase);
-
+  if (execResult.finalStatus === "RESOLVED") {
     logStep(
       "VERIFY",
-      `Verification Succeeded: ${verification.details}`,
+      `Verification Succeeded: ${execResult.verification.details}`,
       "SUCCESS",
-      verification
+      execResult.verification
     );
     logStep(
       "OUTCOME",
@@ -213,29 +191,16 @@ export async function runAgentLoopForCase(
       final_status: "RESOLVED",
       value_resolved: refundCase.amount,
       steps,
-      updated_case: Database.getCase(workspaceId, caseId)!,
+      updated_case: updatedCaseAfterExec,
     };
   }
 
-  // 7. VERIFICATION FAILED (PLANTED FAILURE FIXTURE OR INEFFECTIVE REMEDIATION)
-  refundCase.current_status = "ESCALATED_FAILED_REMEDIATION";
-  if (refundCase.latest_diagnosis) {
-    refundCase.latest_diagnosis.confidence = 0.35;
-  }
-  Database.updateCase(workspaceId, refundCase);
-
-  await adapter.escalateToHuman(
-    workspaceId,
-    caseId,
-    `Autonomous remediation '${policy.action_to_take}' executed but verification confirmed case remained unresolved (${verification.observed_status}). Agent stopped safely to prevent loop.`,
-    "ESCALATED_FAILED_REMEDIATION"
-  );
-
+  // Verification failed or planted failure triggered
   logStep(
     "VERIFY",
-    `VERIFICATION FAILED: ${verification.details}`,
+    `VERIFICATION FAILED: ${execResult.verification.details}`,
     "FAILURE",
-    verification
+    execResult.verification
   );
   logStep(
     "OUTCOME",
@@ -250,6 +215,6 @@ export async function runAgentLoopForCase(
     final_status: "ESCALATED_FAILED_REMEDIATION",
     value_resolved: 0,
     steps,
-    updated_case: Database.getCase(workspaceId, caseId)!,
+    updated_case: updatedCaseAfterExec,
   };
 }

@@ -9,6 +9,8 @@ import {
   AuditLogEntry,
   AllowedAction,
   SandboxConfig,
+  ExecutionAuthorization,
+  PolicyEvaluationRecord,
 } from "@/types";
 import { generateRefundDataset } from "../simulator/generator";
 
@@ -19,6 +21,8 @@ interface DatabaseSchema {
   cases: Record<string, RefundCase>;
   audit_logs: AuditLogEntry[];
   sandbox_configs: Record<string, SandboxConfig>;
+  authorizations: Record<string, ExecutionAuthorization>;
+  policy_evaluations: Record<string, PolicyEvaluationRecord>;
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -54,6 +58,8 @@ function initDb(): DatabaseSchema {
       const content = fs.readFileSync(DB_FILE, "utf-8");
       const parsed = JSON.parse(content) as DatabaseSchema;
       if (parsed.workspaces && parsed.users) {
+        if (!parsed.authorizations) parsed.authorizations = {};
+        if (!parsed.policy_evaluations) parsed.policy_evaluations = {};
         globalThis.__APP_DATABASE__ = parsed;
         return parsed;
       }
@@ -139,6 +145,8 @@ function initDb(): DatabaseSchema {
     sandbox_configs: {
       [demoWorkspace.id]: { seed: 12345, difficulty: "normal", count: 100 },
     },
+    authorizations: {},
+    policy_evaluations: {},
   };
 
   globalThis.__APP_DATABASE__ = db;
@@ -414,4 +422,83 @@ export const Database = {
     saveToDisk(db);
     return this.getCases(workspaceId);
   },
+
+  // ─── Policy Evaluations (Immutable Audit Persistence) ───────────────────
+  savePolicyEvaluation(record: PolicyEvaluationRecord): void {
+    const db = initDb();
+    if (!db.policy_evaluations) db.policy_evaluations = {};
+    db.policy_evaluations[record.evaluation_id] = record;
+    saveToDisk(db);
+  },
+
+  getPolicyEvaluation(evaluationId: string): PolicyEvaluationRecord | undefined {
+    const db = initDb();
+    return db.policy_evaluations?.[evaluationId];
+  },
+
+  getPolicyEvaluationsForCase(workspaceId: string, caseId: string): PolicyEvaluationRecord[] {
+    const db = initDb();
+    if (!db.policy_evaluations) return [];
+    return Object.values(db.policy_evaluations)
+      .filter((r) => r.workspace_id === workspaceId && r.case_id === caseId)
+      .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime());
+  },
+
+  // ─── Execution Authorizations (Strict Server-Side Bounded Tokens) ──────────
+  createExecutionAuthorization(auth: ExecutionAuthorization): void {
+    const db = initDb();
+    if (!db.authorizations) db.authorizations = {};
+    db.authorizations[auth.authorization_id] = auth;
+    saveToDisk(db);
+  },
+
+  getExecutionAuthorization(authorizationId: string): ExecutionAuthorization | undefined {
+    const db = initDb();
+    return db.authorizations?.[authorizationId];
+  },
+
+  /**
+   * Atomic consumption of execution authorization.
+   * Protects against race conditions / double execution.
+   */
+  consumeExecutionAuthorization(
+    authorizationId: string,
+    workspaceId: string,
+    caseId: string,
+    consumer = "PAYMENT_EXECUTOR"
+  ): { success: boolean; error?: string; authorization?: ExecutionAuthorization } {
+    const db = initDb();
+    if (!db.authorizations) db.authorizations = {};
+    const auth = db.authorizations[authorizationId];
+
+    if (!auth) {
+      return { success: false, error: "EXECUTION_NOT_AUTHORIZED: Authorization token not found." };
+    }
+
+    if (auth.workspace_id !== workspaceId) {
+      return { success: false, error: "EXECUTION_NOT_AUTHORIZED: Cross-workspace authorization forbidden." };
+    }
+
+    if (auth.case_id !== caseId) {
+      return { success: false, error: "EXECUTION_NOT_AUTHORIZED: Authorization token does not match target case." };
+    }
+
+    if (auth.consumed) {
+      return { success: false, error: "AUTHORIZATION_ALREADY_USED: Token has already been consumed." };
+    }
+
+    const now = Date.now();
+    if (now > auth.expires_at) {
+      return { success: false, error: "AUTHORIZATION_EXPIRED: Token expired after TTL." };
+    }
+
+    // Atomic mark as consumed
+    auth.consumed = true;
+    auth.consumed_at = now;
+    auth.consumed_by = consumer;
+    saveToDisk(db);
+
+    return { success: true, authorization: auth };
+  },
 };
+

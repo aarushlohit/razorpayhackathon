@@ -34,7 +34,7 @@ export default function SettingsPage() {
       icon: Layers,
     },
     {
-      title: "Deterministic Policies",
+      title: "Agentic Safety Policies",
       desc: "Inspect and configure the 10 code-enforced safety rules.",
       href: "/app/settings/policies",
       icon: Shield,

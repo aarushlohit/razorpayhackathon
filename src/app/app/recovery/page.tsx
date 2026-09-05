@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { RefundCase } from "@/types";
+import { ChevronRight } from "lucide-react";
 
 export default function RecoveryQueuePage() {
   const [cases, setCases] = useState<RefundCase[]>([]);
-  const [filter, setFilter] = useState<"ALL" | "LIMBO" | "RESOLVED" | "ESCALATED">("ALL");
+  const [filter, setFilter] = useState<"ALL" | "ATTENTION" | "INVESTIGATING" | "RESOLVED">("ATTENTION");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +16,7 @@ export default function RecoveryQueuePage() {
       const res = await fetch("/api/cases");
       const data = await res.json();
       if (data.success) {
-        setCases(data.data.cases);
+        setCases(data.data.cases || []);
       }
     } finally {
       setLoading(false);
@@ -27,9 +28,9 @@ export default function RecoveryQueuePage() {
   }, []);
 
   const filtered = cases.filter((c) => {
-    if (filter === "LIMBO" && c.current_status !== "LIMBO" && c.current_status !== "INVESTIGATING") return false;
+    if (filter === "ATTENTION" && c.current_status !== "LIMBO" && !c.current_status.startsWith("ESCALATED")) return false;
+    if (filter === "INVESTIGATING" && c.current_status !== "INVESTIGATING" && c.current_status !== "ACTION_IN_PROGRESS") return false;
     if (filter === "RESOLVED" && c.current_status !== "RESOLVED") return false;
-    if (filter === "ESCALATED" && !c.current_status.startsWith("ESCALATED")) return false;
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -43,105 +44,142 @@ export default function RecoveryQueuePage() {
   });
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="space-y-8 max-w-5xl pb-16">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#000000]">Recovery Queue</h1>
-        <p className="text-[14px] text-[#6E6E73] mt-1">
-          Post-payment refunds requiring telemetry correlation, policy validation, and autonomous resolution.
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-[#000000]">
+          Recovery Queue
+        </h1>
+        <p className="text-[14px] text-[#6E6E73]">
+          The AI has prioritized {cases.length} refund cases across your connected payment systems.
         </p>
       </div>
 
-      {/* Filter Tabs & Search Bar */}
+      {/* Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-6 text-[13px] font-medium">
-          {(["ALL", "LIMBO", "RESOLVED", "ESCALATED"] as const).map((tab) => (
+        <div className="flex items-center gap-6 text-[13px]">
+          {(["ATTENTION", "ALL", "INVESTIGATING", "RESOLVED"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`transition pb-1 ${
+              className={`transition pb-1 font-medium ${
                 filter === tab
                   ? "text-[#000000] border-b-2 border-[#000000] font-semibold"
                   : "text-[#6E6E73] hover:text-[#000000]"
               }`}
             >
-              {tab === "ALL" ? `All (${cases.length})` : tab === "LIMBO" ? "Needs Attention" : tab}
+              {tab === "ATTENTION"
+                ? "Needs attention"
+                : tab === "ALL"
+                ? `All (${cases.length})`
+                : tab === "INVESTIGATING"
+                ? "Investigating"
+                : "Resolved"}
             </button>
           ))}
         </div>
 
         <input
           type="text"
-          placeholder="Search refund, merchant, UTR..."
+          placeholder="Search refund, merchant, customer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-white border border-[#E5E5E7] rounded-full px-4 py-1.5 text-xs text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#000000] transition max-w-xs shadow-2xs"
         />
       </div>
 
-      {/* Clean Monochrome Table */}
-      <div className="bg-white border border-[#E5E5E7] rounded-2xl p-5 shadow-2xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-[#E5E5E7] text-[#86868B] font-mono uppercase text-[11px]">
-                <th className="pb-3 font-medium">Refund</th>
-                <th className="pb-3 font-medium">Merchant</th>
-                <th className="pb-3 font-medium">Customer</th>
-                <th className="pb-3 font-medium">Amount</th>
-                <th className="pb-3 font-medium">Age</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E5E7]">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#86868B] font-mono">
-                    Loading recovery cases...
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#6E6E73]">
-                    No matching refund cases found in queue.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => (
-                  <tr key={c.case_id} className="hover:bg-[#F5F5F7] transition">
-                    <td className="py-3.5 font-mono font-semibold text-[#000000]">
-                      <div>{c.case_id}</div>
-                      <div className="text-[10px] text-[#86868B] font-mono">{c.refund_id}</div>
-                    </td>
-                    <td className="py-3.5 font-medium text-[#1D1D1F]">{c.merchant_name}</td>
-                    <td className="py-3.5 text-[#6E6E73]">
-                      <div>{c.customer_name}</div>
-                      <div className="text-[10px] font-mono text-[#86868B]">{c.customer_vpa_or_account}</div>
-                    </td>
-                    <td className="py-3.5 font-mono font-medium text-[#000000]">
+      {/* Minimal Editorial List View */}
+      <div className="divide-y divide-[#E5E5E7] border-y border-[#E5E5E7]">
+        {loading ? (
+          <div className="py-16 text-center text-xs text-[#86868B] font-mono">
+            Loading prioritized queue...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-xs text-[#86868B] font-mono">
+            No refund cases matching this filter.
+          </div>
+        ) : (
+          filtered.map((c) => {
+            const diag = c.latest_diagnosis;
+            const isResolved = c.current_status === "RESOLVED";
+            const isEscalated = c.current_status.startsWith("ESCALATED");
+
+            // Natural language AI summary line
+            const summaryLine = diag?.assessment?.summary || diag?.reasoning || (
+              c.failure_class === "WEBHOOK_MISSING"
+                ? "Webhook delivery anomaly between gateway and merchant."
+                : c.failure_class === "BANK_LEG_STUCK"
+                ? "Downstream settlement leg stalled in NPCI clearing switch."
+                : c.failure_class === "LEDGER_MISMATCH"
+                ? "Discrepancy detected between gateway batch and merchant accounting ledger."
+                : c.failure_class === "INVALID_DESTINATION"
+                ? "Beneficiary account or VPA rejected by destination bank."
+                : "Cross-system payment state inconsistency under correlation."
+            );
+
+            // Natural language action line
+            const recommendedAction = diag?.assessment?.recommended_action?.action || diag?.recommended_action;
+            const actionText = recommendedAction === "resend_webhook"
+              ? "Retry webhook delivery"
+              : recommendedAction === "refresh_status"
+              ? "Refresh gateway status"
+              : recommendedAction === "reconcile_state"
+              ? "Reconcile internal ledger"
+              : "Needs human review";
+
+            return (
+              <Link
+                key={c.case_id}
+                href={`/app/recovery/${c.case_id}`}
+                className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:bg-[#FBFBFC] transition px-3 rounded-xl -mx-3"
+              >
+                <div className="space-y-1.5 max-w-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-[#000000]">
+                      {c.case_id}
+                    </span>
+                    <span className="text-[#86868B]">·</span>
+                    <span className="text-xs font-semibold text-[#1D1D1F]">
+                      {c.merchant_name}
+                    </span>
+                  </div>
+
+                  <p className="text-[13px] text-[#1D1D1F] leading-snug">
+                    {summaryLine}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#6E6E73] font-mono pt-0.5">
+                    {diag && (
+                      <>
+                        <span>AI confidence {(diag.confidence * 100).toFixed(0)}%</span>
+                        <span>·</span>
+                      </>
+                    )}
+                    <span>
+                      Recommended: <strong className="text-[#1D1D1F]">{actionText}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 shrink-0 sm:self-center">
+                  <div className="text-left sm:text-right font-mono">
+                    <div className="text-sm font-semibold text-[#000000]">
                       ₹{c.amount.toLocaleString("en-IN")}
-                    </td>
-                    <td className="py-3.5 font-mono text-[#6E6E73]">{c.age_days}d</td>
-                    <td className="py-3.5">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-[#F5F5F7] border border-[#E5E5E7] text-[#1D1D1F]">
-                        {c.current_status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <Link
-                        href={`/app/recovery/${c.case_id}`}
-                        className="inline-flex items-center gap-1 text-[12px] px-3.5 py-1 bg-[#000000] text-white rounded-full font-medium hover:bg-[#1D1D1F] transition"
-                      >
-                        Investigate →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <div className="text-[11px] text-[#86868B]">
+                      {c.age_days} days
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs font-semibold text-[#000000] group-hover:underline">
+                    <span>Review</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

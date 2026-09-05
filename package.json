@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test tests/policy_and_loop.test.mjs"
+    "test": "node --test tests/policy_and_loop.test.mjs tests/security_guardrails.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",

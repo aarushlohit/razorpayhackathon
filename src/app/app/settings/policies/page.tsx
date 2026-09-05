@@ -20,7 +20,7 @@ export default function PoliciesPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Deterministic Safety Policy Rules</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Agentic Safety Policy Rules</h1>
         <p className="text-xs text-slate-400 mt-0.5">
           Consequential decisions are governed by code. The LLM has zero bypass authority.
         </p>
